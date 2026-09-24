@@ -1,1 +1,1 @@
-Put images here: logo.png, products etc
+Put logo.png here

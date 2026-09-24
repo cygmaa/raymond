@@ -10,7 +10,6 @@ body{background:#f5f5f5;display:flex;height:100vh;overflow:hidden}
 .nav-item{padding:12px 20px;cursor:pointer;display:flex;align-items:center;gap:12px;font-size:14px;color:#aaa;transition:.2s;border-left:3px solid transparent}
 .nav-item:hover{background:#1a1a1a;color:#fff}
 .nav-item.active{background:#1e1e1e;color:#fff;border-left-color:var(--red)}
-.nav-item.active .dot{width:6px;height:6px;background:var(--red);display:inline-block}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#fff}
 .topbar{height:56px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#fff}
 .topbar h2{font-size:18px;font-weight:700}
@@ -43,7 +42,6 @@ body{background:#f5f5f5;display:flex;height:100vh;overflow:hidden}
 .form-group.full{grid-column:1 / -1}
 .form-group label{font-size:12px;font-weight:600;display:block;margin-bottom:6px;text-transform:uppercase;color:#555}
 .form-group input,.form-group select,.form-group textarea{width:100%;padding:10px;border:1px solid #ddd;font-size:14px}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--red)}
 .badge{padding:4px 8px;font-size:11px;font-weight:700}
 .badge-pending{background:#fff3cd;color:#856404}
 .badge-delivered{background:#d4edda;color:#155724}
@@ -51,4 +49,69 @@ body{background:#f5f5f5;display:flex;height:100vh;overflow:hidden}
 .logo-preview{width:80px;height:80px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f9f9f9}
 .logo-preview img{width:100%;height:100%;object-fit:cover}
 .empty{padding:40px;text-align:center;color:#888}
-@media(max-width:768px){.sidebar{width:60px}.sidebar-header h1,.nav-item span{display:none}.form-grid{grid-template-columns:1fr}}
+/* ===== ADMIN LOGIN LOCK - FIXED & SMALL OK ===== */
+#loginOverlay{
+  position:fixed !important;
+  top:0 !important; left:0 !important; right:0 !important; bottom:0 !important;
+  width:100vw !important; height:100vh !important;
+  background:#ffffff !important;
+  z-index:999999 !important;
+  display:none;
+  align-items:center !important;
+  justify-content:center !important;
+  flex-direction:column !important;
+}
+#loginOverlay.show{
+  display:flex !important;
+}
+.login-box{
+  width:280px;
+  text-align:center;
+  background:#fff;
+  padding:20px;
+}
+.login-label{
+  color:#CC0000;
+  font-size:13px;
+  font-weight:400;
+  letter-spacing:1px;
+  margin-bottom:10px;
+  font-family:Inter,system-ui,sans-serif;
+  text-transform:uppercase;
+}
+.login-input{
+  width:100%;
+  padding:8px 10px;
+  border:1px solid #CC0000;
+  outline:none;
+  font-size:14px;
+  text-align:center;
+  letter-spacing:3px;
+  background:#fff;
+  color:#111;
+  border-radius:0;
+}
+.login-input:focus{border:1.5px solid #CC0000;}
+.login-error{
+  color:#CC0000;
+  font-size:11px;
+  margin-top:8px;
+  min-height:14px;
+  display:none;
+  font-family:Inter,sans-serif;
+}
+.login-error.show{display:block !important;}
+.login-ok{
+  margin-top:12px;
+  padding:6px 24px;
+  background:#CC0000;
+  color:#fff;
+  border:0;
+  font-weight:600;
+  cursor:pointer;
+  font-size:12px;
+  min-width:70px;
+  border-radius:0;
+}
+.login-ok:hover{background:#a80000;}
+.bulk-box{border:2px dashed #CC0000;background:#fff8f8;padding:10px;margin-bottom:12px}
