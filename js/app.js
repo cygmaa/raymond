@@ -1,48 +1,107 @@
 
+// ====== HARDCODED FIREBASE CONFIG (Your Project) ======
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDmupiTTuxwYZPci-lFehUL1pNv9TV8CE8",
+  authDomain: "raymond-df295.firebaseapp.com",
+  projectId: "raymond-df295",
+  storageBucket: "raymond-df295.firebasestorage.app",
+  messagingSenderId: "36554452985",
+  appId: "1:36554452985:web:51546aaf1ba16d536d5728"
+};
+
 const DB_KEY = 'raymond_v2_db';
 const ATT_KEY = 'raymond_attendance_v2';
 
 function loadDB(){
   const d = localStorage.getItem(DB_KEY);
-  if(!d) return {orders:[], customers:[], staff:[], products:[], nextSlip:1};
-  try{ return JSON.parse(d); }catch{ return {orders:[], customers:[], staff:[], products:[], nextSlip:1} }
+  if(!d) return {orders:[], customers:[], staff:[], products:[], nextSlip:1, lastSync:0};
+  try{ return JSON.parse(d); }catch{ return {orders:[], customers:[], staff:[], products:[], nextSlip:1, lastSync:0} }
 }
-function saveDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); if(window.firebaseReady) syncToFirebase(db); }
+function saveDB(db){ 
+  db.lastSync = Date.now();
+  localStorage.setItem(DB_KEY, JSON.stringify(db)); 
+  if(window.firebaseReady) syncToFirebase(db); 
+  updateDash();
+}
 let db = loadDB();
 
 // Firebase
 let firebaseReady = false;
 let fb_db = null;
-function initFirebase(){
+
+function getFirebaseConfig(){
+  // 1. Try Settings (localStorage)
   const cfgRaw = localStorage.getItem('firebase_config');
-  if(!cfgRaw) return;
+  if(cfgRaw){
+    try{
+      const cfg = JSON.parse(cfgRaw);
+      if(cfg.apiKey && cfg.apiKey.length>10) return cfg;
+    }catch{}
+  }
+  // 2. Fallback to hardcoded default
+  return DEFAULT_FIREBASE_CONFIG;
+}
+
+function initFirebase(){
   try{
-    const cfg = JSON.parse(cfgRaw);
-    if(!cfg.apiKey) return;
+    const cfg = getFirebaseConfig();
+    if(!cfg.apiKey) {
+      document.getElementById('fbStatus').innerText = '⚠ No Firebase config found';
+      return;
+    }
     if(!firebase.apps.length) firebase.initializeApp(cfg);
     fb_db = firebase.firestore();
     firebaseReady = true;
     window.firebaseReady = true;
+    
+    // Listen live
     fb_db.collection('meta').doc('raymond').onSnapshot(doc=>{
       if(doc.exists){
         const data = doc.data();
-        if(data.updatedAt && data.updatedAt > (db.lastSync||0)){
+        // If remote is newer than local, update
+        if(data.updatedAt && data.updatedAt > (db.lastSync||0) + 1000){
+          console.log('Live update from Firebase', data.updatedAt);
           db = data.payload;
+          db.lastSync = data.updatedAt;
           localStorage.setItem(DB_KEY, JSON.stringify(db));
           renderAll();
+          // also sync attendance if included
+          if(data.attendance){
+            localStorage.setItem(ATT_KEY, JSON.stringify(data.attendance));
+          }
         }
       }
+    }, err=>{
+      console.error(err);
+      document.getElementById('fbStatus').innerText = '✗ Error: '+err.message;
+      document.getElementById('fbStatus').style.color='red';
     });
-    document.getElementById('fbStatus').innerText = '✓ Connected - Live Sync Active';
+
+    document.getElementById('fbStatus').innerText = '✓ Connected - Live Sync Active (Project: '+cfg.projectId+')';
     document.getElementById('fbStatus').style.color = 'green';
+    
+    // If local has data but remote is empty, push local to remote once
+    fb_db.collection('meta').doc('raymond').get().then(doc=>{
+      if(!doc.exists && db.orders.length>0){
+        syncToFirebase(db);
+      }
+    });
+
   }catch(e){
     console.error(e);
-    document.getElementById('fbStatus').innerText = '✗ Error: '+e.message;
+    const el = document.getElementById('fbStatus');
+    if(el){ el.innerText = '✗ Error: '+e.message; el.style.color='red'; }
   }
 }
+
 function syncToFirebase(payload){
   if(!fb_db) return;
-  fb_db.collection('meta').doc('raymond').set({payload, updatedAt: Date.now()});
+  const att = loadAttendance();
+  fb_db.collection('meta').doc('raymond').set({
+    payload: payload,
+    attendance: att,
+    updatedAt: Date.now()
+  }).catch(err=>console.error('Sync error', err));
 }
 
 // Attendance
@@ -51,15 +110,16 @@ function loadAttendance(){
   if(!a) return {};
   try{ return JSON.parse(a); }catch{ return {}; }
 }
-function saveAttendance(att){ localStorage.setItem(ATT_KEY, JSON.stringify(att)); }
+function saveAttendance(att){ 
+  localStorage.setItem(ATT_KEY, JSON.stringify(att)); 
+  if(window.firebaseReady) syncToFirebase(db);
+}
 
 function getTodayStr(){ return new Date().toISOString().split('T')[0]; }
-
 function checkReset(){
   const last = localStorage.getItem('last_att_date');
   const today = getTodayStr();
   if(last !== today){
-    // reset handled by UI - we keep history but UI shows Absent by default for new date
     localStorage.setItem('last_att_date', today);
   }
 }
@@ -69,7 +129,8 @@ let currentTab = 'dashboard';
 function switchTab(tab){
   currentTab = tab;
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  document.getElementById('nav-'+tab).classList.add('active');
+  const nav = document.getElementById('nav-'+tab);
+  if(nav) nav.classList.add('active');
   document.getElementById('topTitle').innerText = tab.charAt(0).toUpperCase()+tab.slice(1).replace('-',' ');
   document.querySelectorAll('.tab-content').forEach(el=>el.style.display='none');
   document.getElementById('tab-'+tab).style.display='block';
@@ -78,20 +139,14 @@ function switchTab(tab){
   if(tab==='daily-presents') renderAttendance();
   if(tab==='portal') renderPortal();
 }
-
-// Dashboard + dropdown
-function toggleDropdown(){
-  document.getElementById('plusDropdown').classList.toggle('show');
-}
+function toggleDropdown(){ document.getElementById('plusDropdown').classList.toggle('show'); }
 
 // New Order
-let editingOrder = null;
 function openNewOrder(){
   document.getElementById('plusDropdown').classList.remove('show');
   document.getElementById('orderModal').classList.add('show');
   document.getElementById('orderForm').reset();
   document.getElementById('orderSlipPreview').innerText = 'Slip #'+db.nextSlip;
-  // set delivery default +3 days
   const d = new Date(); d.setDate(d.getDate()+3);
   document.getElementById('f_delivery').valueAsDate = d;
 }
@@ -122,7 +177,6 @@ document.getElementById('orderForm').addEventListener('submit', function(e){
   };
   order.due = order.total - order.advance;
   db.orders.unshift(order);
-  // add customer
   let cust = db.customers.find(c=>c.mobile===order.mobile);
   if(!cust){
     db.customers.push({id:Date.now(), name:order.name, mobile:order.mobile, totalOrders:1, totalSpent:order.total, lastDate:order.createdAt});
@@ -131,7 +185,7 @@ document.getElementById('orderForm').addEventListener('submit', function(e){
   }
   saveDB(db);
   closeOrderModal();
-  alert('Order Saved! Slip #'+order.slip);
+  alert('Order Saved! Slip #'+order.slip+' - Live synced to Firebase!');
   renderAll();
   switchTab('order-slip');
 });
@@ -172,8 +226,6 @@ function markDelivered(id){
   const o = db.orders.find(x=>x.id===id);
   if(o){ o.status='Delivered'; saveDB(db); renderOrderSlip(); document.getElementById('slipModal').classList.remove('show'); }
 }
-
-// Sale Products
 function openSale(){
   document.getElementById('plusDropdown').classList.remove('show');
   document.getElementById('saleModal').classList.add('show');
@@ -208,11 +260,7 @@ function renderCart(){
 function checkoutSale(){
   if(cart.length===0) return alert('Cart empty');
   const total = cart.reduce((s,i)=>s+i.price*i.qty,0);
-  // reduce stock
-  cart.forEach(c=>{
-    const p = db.products.find(x=>x.id===c.id);
-    if(p) p.stock -= c.qty;
-  });
+  cart.forEach(c=>{ const p = db.products.find(x=>x.id===c.id); if(p) p.stock -= c.qty; });
   const order = {id:Date.now(), slip:db.nextSlip++, name:'Walk-in Sale', mobile:'-', type:'Sale', fabric:'-', qty:cart.length, delivery:getTodayStr(), total, advance:total, due:0, notes:'Products: '+cart.map(c=>c.name+'x'+c.qty).join(', '), status:'Delivered', createdAt:new Date().toISOString()};
   db.orders.unshift(order);
   saveDB(db);
@@ -221,15 +269,11 @@ function checkoutSale(){
   alert('Sale completed! Slip #'+order.slip);
   renderAll();
 }
-
-// Customers
 function renderCustomers(){
   const el = document.getElementById('customerList');
   if(db.customers.length===0){ el.innerHTML='<div class="empty">No customers yet</div>'; return; }
   el.innerHTML = '<table class="table"><tr><th>Name</th><th>Mobile</th><th>Orders</th><th>Spent ৳</th><th>Last</th></tr>'+db.customers.map(c=>`<tr><td>${c.name}</td><td>${c.mobile}</td><td>${c.totalOrders}</td><td>৳ ${c.totalSpent}</td><td>${new Date(c.lastDate).toLocaleDateString()}</td></tr>`).join('')+'</table>';
 }
-
-// Attendance
 function renderAttendance(){
   checkReset();
   const today = getTodayStr();
@@ -238,10 +282,10 @@ function renderAttendance(){
   const container = document.getElementById('attendanceList');
   if(db.staff.length===0){ container.innerHTML='<div class="empty">No staff in Portal. Add staff first.</div>'; return; }
   container.innerHTML = db.staff.map(s=>{
-    const status = todayAtt[s.id] || 'Absent';
-    const isPresent = status==='Present';
+    const statusObj = todayAtt[s.id];
+    const isPresent = statusObj && statusObj.status==='Present';
     return `<div class="attendance-row">
-      <div><b>${s.name}</b> <small style="color:#888">(${s.role})</small></div>
+      <div><b>${s.name}</b> <small style="color:#888">(${s.role})</small> ${isPresent?'<small style="color:green">- '+statusObj.time+'</small>':''}</div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-gray ${!isPresent?'active-absent':''}" onclick="markAttendance(${s.id},'Absent')">Absent</button>
         <button class="btn btn-gray ${isPresent?'active-present':''}" onclick="markAttendance(${s.id},'Present')">Present</button>
@@ -267,7 +311,6 @@ function markAttendance(staffId, status){
   }
   saveAttendance(att);
   renderAttendance();
-  saveDB(db); // trigger firebase sync if needed
 }
 function showHistory(type){
   const att = loadAttendance();
@@ -279,7 +322,7 @@ function showHistory(type){
     const d = new Date(); d.setDate(now.getDate()-i);
     const ds = d.toISOString().split('T')[0];
     const dayAtt = att[ds];
-    if(dayAtt){
+    if(dayAtt && Object.keys(dayAtt).length>0){
       html+=`<div style="padding:6px 0;border-bottom:1px solid #f0f0f0"><b>${ds}</b>: `;
       db.staff.forEach(s=>{
         if(dayAtt[s.id]) html+=`${s.name} (${dayAtt[s.id].time}) Present, `;
@@ -290,8 +333,6 @@ function showHistory(type){
   html+='</div>';
   el.innerHTML=html;
 }
-
-// Portal
 function renderPortal(){
   document.getElementById('portalStaffList').innerHTML = db.staff.length? db.staff.map(s=>`<div class="attendance-row"><div><b>${s.name}</b> - ${s.role} - ${s.phone} - ৳${s.salary}</div><button class="btn btn-gray" onclick="deleteStaff(${s.id})">Delete</button></div>`).join('') : '<div class="empty">No staff</div>';
   document.getElementById('portalProductList').innerHTML = db.products.length? db.products.map(p=>`<div class="attendance-row"><div><b>${p.name}</b> - ৳${p.price} - Stock ${p.stock}</div><button class="btn btn-gray" onclick="deleteProduct(${p.id})">Delete</button></div>`).join('') : '<div class="empty">No products</div>';
@@ -319,8 +360,6 @@ function addProduct(){
   renderPortal();
 }
 function deleteProduct(id){ db.products=db.products.filter(p=>p.id!==id); saveDB(db); renderPortal(); }
-
-// Settings - logo & firebase
 function handleLogoUpload(input){
   const file = input.files[0];
   if(!file) return;
@@ -329,67 +368,125 @@ function handleLogoUpload(input){
   reader.onload = e=>{
     localStorage.setItem('shop_logo', e.target.result);
     document.getElementById('logoPreview').innerHTML = `<img src="${e.target.result}">`;
-    // also save to img folder permission note - store in localStorage and offer download
-    const a = document.createElement('a');
-    a.href = e.target.result;
-    a.download = 'logo.png';
-    // user can manually move to img folder if needed
   };
   reader.readAsDataURL(file);
 }
 function saveShopInfo(){
-  const info = {
-    name: document.getElementById('shopName').value,
-    address: document.getElementById('shopAddress').value,
-    phone: document.getElementById('shopPhone').value
-  };
+  const info = {name: document.getElementById('shopName').value, address: document.getElementById('shopAddress').value, phone: document.getElementById('shopPhone').value};
   localStorage.setItem('shop_info', JSON.stringify(info));
   alert('Shop info saved');
 }
+
+function parseBulkConfig(){
+  const bulk = document.getElementById('bulkFirebasePaste').value.trim();
+  if(!bulk) return alert('Config পেস্ট করুন');
+  const extract = (key) => {
+    const patterns = [
+      new RegExp(key + '\\s*:\\s*["\']([^"\']+)["\']', 'i'),
+      new RegExp(key + '\\s*=\\s*["\']([^"\']+)["\']', 'i'),
+      new RegExp('"' + key + '"\\s*:\\s*["\']([^"\']+)["\']', 'i')
+    ];
+    for(let p of patterns){
+      const m = bulk.match(p);
+      if(m) return m[1];
+    }
+    return '';
+  };
+  const cfg = {
+    apiKey: extract('apiKey'),
+    authDomain: extract('authDomain'),
+    projectId: extract('projectId'),
+    storageBucket: extract('storageBucket'),
+    messagingSenderId: extract('messagingSenderId'),
+    appId: extract('appId')
+  };
+  if(!cfg.apiKey){
+    try{
+      let jsonStr = bulk;
+      const braceMatch = bulk.match(/\{([\s\S]*?)\}/);
+      if(braceMatch){
+        jsonStr = '{' + braceMatch[1] + '}';
+        jsonStr = jsonStr.replace(/(\w+)\s*:/g, '"$1":').replace(/'/g, '"');
+        const obj = JSON.parse(jsonStr);
+        cfg.apiKey = obj.apiKey || '';
+        cfg.authDomain = obj.authDomain || '';
+        cfg.projectId = obj.projectId || '';
+        cfg.storageBucket = obj.storageBucket || '';
+        cfg.messagingSenderId = obj.messagingSenderId || '';
+        cfg.appId = obj.appId || '';
+      }
+    }catch(e){ console.log('JSON parse failed', e); }
+  }
+  if(!cfg.apiKey) return alert('Config খুঁজে পাওয়া যায়নি! এই ফরমেটে পেস্ট করুন:\napiKey: \"xxx\",\nauthDomain: \"xxx\", ...');
+  document.getElementById('fb_apiKey').value = cfg.apiKey;
+  document.getElementById('fb_authDomain').value = cfg.authDomain;
+  document.getElementById('fb_projectId').value = cfg.projectId;
+  document.getElementById('fb_storageBucket').value = cfg.storageBucket;
+  document.getElementById('fb_messagingSenderId').value = cfg.messagingSenderId;
+  document.getElementById('fb_appId').value = cfg.appId;
+  localStorage.setItem('firebase_config', JSON.stringify(cfg));
+  document.getElementById('bulkFirebasePaste').value = '';
+  alert('✓ 6 টা ফিল্ড অটো ফিল হয়েছে! এখন কানেক্ট হচ্ছে... Project: '+cfg.projectId);
+  location.reload();
+}
+
 function saveFirebaseConfig(){
   const cfg = {
-    apiKey: document.getElementById('fb_apiKey').value,
-    authDomain: document.getElementById('fb_authDomain').value,
-    projectId: document.getElementById('fb_projectId').value,
-    storageBucket: document.getElementById('fb_storageBucket').value,
-    messagingSenderId: document.getElementById('fb_messagingSenderId').value,
-    appId: document.getElementById('fb_appId').value
+    apiKey: document.getElementById('fb_apiKey').value.trim(),
+    authDomain: document.getElementById('fb_authDomain').value.trim(),
+    projectId: document.getElementById('fb_projectId').value.trim(),
+    storageBucket: document.getElementById('fb_storageBucket').value.trim(),
+    messagingSenderId: document.getElementById('fb_messagingSenderId').value.trim(),
+    appId: document.getElementById('fb_appId').value.trim()
   };
   if(!cfg.apiKey) return alert('apiKey required');
   localStorage.setItem('firebase_config', JSON.stringify(cfg));
-  alert('Firebase config saved! Reloading...');
+  alert('Firebase config saved! This will override default config. Reloading...');
   location.reload();
 }
 function testFirebase(){
-  if(!firebaseReady) return alert('Not connected. Save config first.');
-  alert('Firebase Connected! Live sync active');
+  if(!firebaseReady) return alert('Not connected. Check config and Firestore Rules (allow read, write: if true)');
+  alert('✓ Firebase Connected! Project: '+getFirebaseConfig().projectId+' - Live sync active');
 }
 function clearAllData(){
-  if(confirm('Delete all data? This cannot be undone!')){
+  if(confirm('Delete all data locally and from Firebase?')){
     localStorage.removeItem(DB_KEY);
     localStorage.removeItem(ATT_KEY);
+    if(fb_db) fb_db.collection('meta').doc('raymond').delete();
     location.reload();
   }
 }
-
-function renderAll(){ renderOrderSlip(); renderCustomers(); renderPortal(); }
-
+function renderAll(){ renderOrderSlip(); renderCustomers(); renderPortal(); updateDash(); }
+function updateDash(){
+  document.getElementById('dashOrderCount').innerText = db.orders.length;
+  document.getElementById('dashCustomerCount').innerText = db.customers.length;
+  document.getElementById('dashSaleTotal').innerText = '৳ ' + db.orders.reduce((s,o)=>s+o.total,0);
+  const tOrders = db.orders.filter(o=> new Date(o.createdAt).toDateString()===new Date().toDateString()).length;
+  const pending = db.orders.filter(o=>o.status==='Pending').length;
+  const att = loadAttendance();
+  const todayAtt = att[getTodayStr()]||{};
+  const present = Object.keys(todayAtt).length;
+  const el1=document.getElementById('todayOrders'); if(el1) el1.innerText=tOrders;
+  const el2=document.getElementById('pendingSlips'); if(el2) el2.innerText=pending;
+  const el3=document.getElementById('presentCount'); if(el3) el3.innerText=present;
+}
 window.onload = function(){
   checkReset();
   initFirebase();
-  // load shop info
   const infoRaw = localStorage.getItem('shop_info');
   if(infoRaw){
     try{ const info=JSON.parse(infoRaw); document.getElementById('shopName').value=info.name||''; document.getElementById('shopAddress').value=info.address||''; document.getElementById('shopPhone').value=info.phone||''; }catch{}
   }
   const logo = localStorage.getItem('shop_logo');
   if(logo){ document.getElementById('logoPreview').innerHTML=`<img src="${logo}">`; document.getElementById('sidebarLogo').innerHTML=`<img src="${logo}" style="width:100%;height:100%;object-fit:cover">`; }
-  const fbCfgRaw = localStorage.getItem('firebase_config');
-  if(fbCfgRaw){
-    try{ const c=JSON.parse(fbCfgRaw); document.getElementById('fb_apiKey').value=c.apiKey||''; document.getElementById('fb_authDomain').value=c.authDomain||''; document.getElementById('fb_projectId').value=c.projectId||''; document.getElementById('fb_storageBucket').value=c.storageBucket||''; document.getElementById('fb_messagingSenderId').value=c.messagingSenderId||''; document.getElementById('fb_appId').value=c.appId||''; }catch{}
-  }
-  // dashboard count
-  document.getElementById('dashOrderCount').innerText = db.orders.length;
-  document.getElementById('dashCustomerCount').innerText = db.customers.length;
-  document.getElementById('dashSaleTotal').innerText = '৳ ' + db.orders.reduce((s,o)=>s+o.total,0);
+  // Fill settings with current effective config (localStorage or default)
+  const effective = getFirebaseConfig();
+  document.getElementById('fb_apiKey').value=effective.apiKey||'';
+  document.getElementById('fb_authDomain').value=effective.authDomain||'';
+  document.getElementById('fb_projectId').value=effective.projectId||'';
+  document.getElementById('fb_storageBucket').value=effective.storageBucket||'';
+  document.getElementById('fb_messagingSenderId').value=effective.messagingSenderId||'';
+  document.getElementById('fb_appId').value=effective.appId||'';
+  updateDash();
+  renderAll();
 }
