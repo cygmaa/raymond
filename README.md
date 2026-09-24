@@ -1,39 +1,35 @@
-# Raymond Shop - Tailoring POS - White & Solid Red #CC0000
+# Raymond Shop - Latest Final Version
 
-## Features
+## Features (All Latest Updates Included)
+- White + Solid Red #CC0000 + Dark Sidebar #111111
+- BDT Currency ৳
 - Dashboard: Big + button -> New Order / Sale Products
-- Order Slip: Slip No #1, #2... starting from 1
-- Daily Presents: Attendance with Present/Absent, auto reset 11:59:59 PM, weekly/monthly/yearly history
+- Order Slip: #1 starting, click for detail
+- Daily Presents: Absent (default) / Present with time, auto reset 11:59:59 PM, Weekly/Monthly/Yearly history
 - Customers: Auto from orders
-- Portal: Staff List + Products
-- Settings: Shop info + Logo upload to img/ + Firebase Live Sync
+- Portal: Staff + Products + Image Upload to img/
+- Settings: Shop Info + Logo Upload + Firebase + Admin Security
 
-## Currency: BDT ৳
+## Security Lock
+- Full white screen on first open
+- Administrator label in red
+- Thin red border password input (dots)
+- Default code: Raymond0@.
+- Browser remembers after first login
+- Change code from Settings
+
+## Firebase Smart Paste
+- Hardcoded config: raymond-df295 (works on any browser/incognito without setup)
+- Settings has BULK PASTE box: paste full config at once, auto fills 6 fields
+- Live sync across all devices
 
 ## Folders
-- index.html (main)
-- css/style.css (all styles)
-- js/app.js (all logic)
-- img/ (upload images here - logo.png, products)
-- database/ (optional json)
+- index.html
+- css/style.css
+- js/app.js
+- img/ (logo.png, product images)
+- database/products.json
 
-## GitHub Pages Deploy
-1. Delete old files in cygmaa/raymond repo
-2. Upload all files from this zip (keep folder structure)
-3. Settings > Pages > Branch: main / root > Save
-4. Live at https://cygmaa.github.io/raymond/
-
-## Image Upload Permission
-- Portal > Products > Product Image Upload
-- Settings > Logo upload
-- Both allow image/* upload. Image saves to browser + you can download and move to img/ folder for permanent.
-- For GitHub Pages permanent: Add images to img/ folder and push.
-
-## Firebase Setup for Live Data
-1. Go to console.firebase.google.com
-2. Create project > Firestore Database > Create database (Test mode)
-3. Project Settings > Your apps > Web > Copy config
-4. In app Settings > Paste apiKey, authDomain, projectId, etc > Save & Connect
-5. Now all devices see same data live!
-
-Without Firebase: Data stays in localStorage (single browser only)
+## Deploy to GitHub Pages
+Upload all files keeping folder structure to cygmaa/raymond repo
+Live at https://cygmaa.github.io/raymond/

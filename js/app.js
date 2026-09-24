@@ -1,58 +1,4 @@
 
-// ====== ADMIN SECURITY LOCK ======
-const DEFAULT_ADMIN_CODE = "Raymond0@.";
-function getAdminCode(){
-  return localStorage.getItem('admin_code') || DEFAULT_ADMIN_CODE;
-}
-function isAdminLoggedIn(){
-  return localStorage.getItem('raymond_auth') === 'true';
-}
-function checkAdminCode(){
-  const input = document.getElementById('adminCodeInput').value;
-  const error = document.getElementById('loginError');
-  const current = getAdminCode();
-  if(input === current){
-    localStorage.setItem('raymond_auth', 'true');
-    document.getElementById('loginOverlay').style.display='none';
-    error.classList.remove('show');
-    document.getElementById('adminCodeInput').value='';
-  } else {
-    error.classList.add('show');
-    error.innerText = 'ভুল কোড! সঠিক কোড দিন।';
-    document.getElementById('adminCodeInput').value='';
-    document.getElementById('adminCodeInput').focus();
-  }
-}
-function changeAdminCode(){
-  const curr = document.getElementById('currentAdminCode').value;
-  const nw = document.getElementById('newAdminCode').value;
-  const conf = document.getElementById('confirmAdminCode').value;
-  const real = getAdminCode();
-  if(curr !== real) return alert('Current code ভুল!');
-  if(!nw || nw.length<4) return alert('New code কমপক্ষে 4 অক্ষরের হতে হবে');
-  if(nw !== conf) return alert('Confirm code মিলছে না');
-  localStorage.setItem('admin_code', nw);
-  document.getElementById('currentAdminCode').value='';
-  document.getElementById('newAdminCode').value='';
-  document.getElementById('confirmAdminCode').value='';
-  alert('Admin code পরিবর্তন করা হয়েছে! নতুন কোড: '+nw);
-}
-function logoutAdmin(){
-  localStorage.removeItem('raymond_auth');
-  alert('Logged out! পরবর্তীতে কোড চাইবে।');
-  location.reload();
-}
-// Enter key support for login
-document.addEventListener('keydown', function(e){
-  if(e.key==='Enter'){
-    const overlay = document.getElementById('loginOverlay');
-    if(overlay && overlay.style.display!=='none'){
-      checkAdminCode();
-    }
-  }
-});
-
-
 const DB_KEY = 'raymond_v2_db';
 const ATT_KEY = 'raymond_attendance_v2';
 
@@ -428,35 +374,22 @@ function clearAllData(){
 
 function renderAll(){ renderOrderSlip(); renderCustomers(); renderPortal(); }
 
-
-
 window.onload = function(){
-  // Admin login check - browser remembers, reset clears it
-  const overlay = document.getElementById('loginOverlay');
-  if(isAdminLoggedIn()){
-    if(overlay) overlay.style.display='none';
-  } else {
-    if(overlay) overlay.style.display='flex';
-    setTimeout(()=>{ const inp=document.getElementById('adminCodeInput'); if(inp) inp.focus(); }, 300);
-  }
   checkReset();
   initFirebase();
+  // load shop info
   const infoRaw = localStorage.getItem('shop_info');
   if(infoRaw){
     try{ const info=JSON.parse(infoRaw); document.getElementById('shopName').value=info.name||''; document.getElementById('shopAddress').value=info.address||''; document.getElementById('shopPhone').value=info.phone||''; }catch{}
   }
   const logo = localStorage.getItem('shop_logo');
-  if(logo){ document.getElementById('logoPreview').innerHTML=`<img src="${logo}">`; const sLogo=document.getElementById('sidebarLogo'); if(sLogo) sLogo.innerHTML=`<img src="${logo}" style="width:100%;height:100%;object-fit:cover">`; }
-  const effective = getFirebaseConfig();
-  const ids = ['fb_apiKey','fb_authDomain','fb_projectId','fb_storageBucket','fb_messagingSenderId','fb_appId'];
-  ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=effective[id.replace('fb_','')]||effective[id]||''; });
-  // Fill correctly
-  document.getElementById('fb_apiKey').value=effective.apiKey||'';
-  document.getElementById('fb_authDomain').value=effective.authDomain||'';
-  document.getElementById('fb_projectId').value=effective.projectId||'';
-  document.getElementById('fb_storageBucket').value=effective.storageBucket||'';
-  document.getElementById('fb_messagingSenderId').value=effective.messagingSenderId||'';
-  document.getElementById('fb_appId').value=effective.appId||'';
-  updateDash();
-  renderAll();
+  if(logo){ document.getElementById('logoPreview').innerHTML=`<img src="${logo}">`; document.getElementById('sidebarLogo').innerHTML=`<img src="${logo}" style="width:100%;height:100%;object-fit:cover">`; }
+  const fbCfgRaw = localStorage.getItem('firebase_config');
+  if(fbCfgRaw){
+    try{ const c=JSON.parse(fbCfgRaw); document.getElementById('fb_apiKey').value=c.apiKey||''; document.getElementById('fb_authDomain').value=c.authDomain||''; document.getElementById('fb_projectId').value=c.projectId||''; document.getElementById('fb_storageBucket').value=c.storageBucket||''; document.getElementById('fb_messagingSenderId').value=c.messagingSenderId||''; document.getElementById('fb_appId').value=c.appId||''; }catch{}
+  }
+  // dashboard count
+  document.getElementById('dashOrderCount').innerText = db.orders.length;
+  document.getElementById('dashCustomerCount').innerText = db.customers.length;
+  document.getElementById('dashSaleTotal').innerText = '৳ ' + db.orders.reduce((s,o)=>s+o.total,0);
 }
