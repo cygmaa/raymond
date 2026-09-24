@@ -3,27 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Raymond Shop - Tailoring POS - Live Firebase</title>
+<title>Raymond Shop - Tailoring POS</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+
+<!-- ADMIN LOGIN LOCK -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-label">Administrator</div>
+    <input type="password" id="adminCodeInput" class="login-input" placeholder="" autocomplete="off">
+    <div id="loginError" class="login-error">ভুল কোড! সঠিক কোড দিন।</div>
+    <button class="login-ok" onclick="checkAdminCode()">OK</button>
+  </div>
+</div>
+
 <div class="sidebar">
   <div class="sidebar-header">
     <div class="logo" id="sidebarLogo">R</div>
     <h1>RAYMOND SHOP</h1>
   </div>
   <nav>
-    <div class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')"><span>Dashboard</span></div>
+    <div class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')"><span class="dot"></span><span>Dashboard</span></div>
     <div class="nav-item" id="nav-order-slip" onclick="switchTab('order-slip')"><span>Order Slip</span></div>
     <div class="nav-item" id="nav-daily-presents" onclick="switchTab('daily-presents')"><span>Daily Presents</span></div>
     <div class="nav-item" id="nav-customers" onclick="switchTab('customers')"><span>Customers</span></div>
     <div class="nav-item" id="nav-portal" onclick="switchTab('portal')"><span>Portal</span></div>
     <div class="nav-item" id="nav-settings" onclick="switchTab('settings')"><span>Settings</span></div>
   </nav>
-  <div style="padding:16px;font-size:11px;color:#666;border-top:1px solid #222">BDT ৳ | Live Firebase</div>
+  <div style="padding:16px;font-size:11px;color:#666;border-top:1px solid #222">BDT ৳ | White & Red Theme</div>
 </div>
+
 <div class="main">
   <div class="topbar">
     <h2 id="topTitle">Dashboard</h2>
@@ -34,6 +46,7 @@
     </div>
   </div>
   <div class="content">
+    <!-- Dashboard -->
     <div id="tab-dashboard" class="tab-content">
       <div class="dashboard-center">
         <div class="plus-btn" onclick="toggleDropdown()">+</div>
@@ -49,27 +62,145 @@
         </div>
       </div>
     </div>
-    <div id="tab-order-slip" class="tab-content" style="display:none"><div id="orderSlipList"></div></div>
-    <div id="tab-daily-presents" class="tab-content" style="display:none"><h3 style="margin-bottom:12px">Today Attendance - <span id="todayDate"></span> (Auto reset 11:59:59 PM)</h3><div id="attendanceList"></div></div>
-    <div id="tab-customers" class="tab-content" style="display:none"><div id="customerList"></div></div>
+
+    <!-- Order Slip -->
+    <div id="tab-order-slip" class="tab-content" style="display:none">
+      <div id="orderSlipList"></div>
+    </div>
+
+    <!-- Daily Presents -->
+    <div id="tab-daily-presents" class="tab-content" style="display:none">
+      <h3 style="margin-bottom:12px">Today Attendance - <span id="todayDate"></span> (Auto reset 11:59:59 PM)</h3>
+      <div id="attendanceList"></div>
+    </div>
+
+    <!-- Customers -->
+    <div id="tab-customers" class="tab-content" style="display:none">
+      <div id="customerList"></div>
+    </div>
+
+    <!-- Portal -->
     <div id="tab-portal" class="tab-content" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-        <div class="card"><h3>Staff List</h3><div class="form-grid" style="margin-top:12px"><div class="form-group"><label>Name</label><input id="staffName"></div><div class="form-group"><label>Role</label><select id="staffRole"><option>Tailor</option><option>Cutter</option><option>Salesman</option><option>Master</option></select></div><div class="form-group"><label>Phone</label><input id="staffPhone"></div><div class="form-group"><label>Salary ৳</label><input id="staffSalary" type="number"></div><div class="form-group full"><button class="btn btn-red" onclick="addStaff()">Add Staff</button></div></div><div id="portalStaffList" style="margin-top:16px"></div></div>
-        <div class="card"><h3>Products (For Sale)</h3><div class="form-grid" style="margin-top:12px"><div class="form-group"><label>Product Name</label><input id="prodName"></div><div class="form-group"><label>Price ৳</label><input id="prodPrice" type="number"></div><div class="form-group"><label>Stock</label><input id="prodStock" type="number"></div><div class="form-group full"><button class="btn btn-red" onclick="addProduct()">Add Product</button></div></div><div style="margin-top:12px"><label>Product Image Upload (saves to img/ folder)</label><input type="file" accept="image/*" onchange="handleLogoUpload(this)"></div><div id="portalProductList" style="margin-top:16px"></div></div>
+        <div class="card">
+          <h3>Staff List</h3>
+          <div class="form-grid" style="margin-top:12px">
+            <div class="form-group"><label>Name</label><input id="staffName"></div>
+            <div class="form-group"><label>Role</label><select id="staffRole"><option>Tailor</option><option>Cutter</option><option>Salesman</option><option>Master</option></select></div>
+            <div class="form-group"><label>Phone</label><input id="staffPhone"></div>
+            <div class="form-group"><label>Salary ৳</label><input id="staffSalary" type="number"></div>
+            <div class="form-group full"><button class="btn btn-red" onclick="addStaff()">Add Staff</button></div>
+          </div>
+          <div id="portalStaffList" style="margin-top:16px"></div>
+        </div>
+        <div class="card">
+          <h3>Products (For Sale)</h3>
+          <div class="form-grid" style="margin-top:12px">
+            <div class="form-group"><label>Product Name</label><input id="prodName"></div>
+            <div class="form-group"><label>Price ৳</label><input id="prodPrice" type="number"></div>
+            <div class="form-group"><label>Stock</label><input id="prodStock" type="number"></div>
+            <div class="form-group full"><button class="btn btn-red" onclick="addProduct()">Add Product</button></div>
+          </div>
+          <div style="margin-top:12px">
+            <label>Product Image Upload (saves to img/ folder - download then move)</label>
+            <input type="file" accept="image/*" onchange="handleLogoUpload(this)">
+            <small style="color:#888">For product images, upload here then save to img/ folder manually for permanent deployment</small>
+          </div>
+          <div id="portalProductList" style="margin-top:16px"></div>
+        </div>
       </div>
     </div>
+
+    <!-- Settings -->
     <div id="tab-settings" class="tab-content" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-        <div class="card"><h3>Shop Information</h3><div class="form-group" style="margin-top:12px"><label>Shop Name</label><input id="shopName" value="Raymond Shop"></div><div class="form-group"><label>Address</label><input id="shopAddress"></div><div class="form-group"><label>Phone</label><input id="shopPhone"></div><div class="form-group"><label>Logo (img/ folder)</label><div class="logo-preview" id="logoPreview">Logo</div><input type="file" accept="image/*" onchange="handleLogoUpload(this)" style="margin-top:8px"><small>Upload logo - saves to browser. Download and put in img/ folder for permanent.</small></div><button class="btn btn-red" onclick="saveShopInfo()">Save Shop Info</button></div>
-        <div class="card"><h3>Firebase Live Sync - Editable</h3><p style="font-size:12px;color:#666;margin:8px 0">Config is hardcoded + editable from here. If you change here and Save, it will override hardcoded config for this browser. Hardcoded ensures Incognito & other devices work without manual setup.</p><div id="fbStatus" style="padding:8px;background:#f0f0f0;font-size:12px;margin-bottom:12px">Connecting...</div><div class="form-group"><label>apiKey</label><input id="fb_apiKey"></div><div class="form-group"><label>authDomain</label><input id="fb_authDomain"></div><div class="form-group"><label>projectId</label><input id="fb_projectId"></div><div class="form-group"><label>storageBucket</label><input id="fb_storageBucket"></div><div class="form-group"><label>messagingSenderId</label><input id="fb_messagingSenderId"></div><div class="form-group"><label>appId</label><input id="fb_appId"></div><div style="display:flex;gap:8px"><button class="btn btn-red" onclick="saveFirebaseConfig()">Save & Override</button><button class="btn btn-gray" onclick="testFirebase()">Test Connection</button></div><hr style="margin:16px 0"><button class="btn btn-dark" onclick="clearAllData()">Clear All Data (Local + Firebase)</button></div>
+        <div class="card">
+          <h3>Shop Information</h3>
+          <div class="form-group" style="margin-top:12px"><label>Shop Name</label><input id="shopName" value="Raymond Shop"></div>
+          <div class="form-group"><label>Address</label><input id="shopAddress"></div>
+          <div class="form-group"><label>Phone</label><input id="shopPhone"></div>
+          <div class="form-group"><label>Logo (img/ folder)</label>
+            <div class="logo-preview" id="logoPreview">Logo</div>
+            <input type="file" accept="image/*" onchange="handleLogoUpload(this)" style="margin-top:8px">
+            <small>Upload logo - it will save to browser. To make permanent, download logo and put in img/ folder as logo.png</small>
+          </div>
+          <button class="btn btn-red" onclick="saveShopInfo()">Save Shop Info</button>
+        </div>
+        <div class="card">
+          <h3>Firebase Live Sync (for multi-device)</h3>
+          <p style="font-size:12px;color:#666;margin:8px 0">Add Firebase config to make data live across all devices. Without it, data stays in this browser only.</p>
+          <div id="fbStatus" style="padding:8px;background:#f0f0f0;font-size:12px;margin-bottom:12px">Not connected - Using localStorage</div>
+          <div class="form-group"><label>apiKey</label><input id="fb_apiKey"></div>
+          <div class="form-group"><label>authDomain</label><input id="fb_authDomain"></div>
+          <div class="form-group"><label>projectId</label><input id="fb_projectId"></div>
+          <div class="form-group"><label>storageBucket</label><input id="fb_storageBucket"></div>
+          <div class="form-group"><label>messagingSenderId</label><input id="fb_messagingSenderId"></div>
+          <div class="form-group"><label>appId</label><input id="fb_appId"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-red" onclick="saveFirebaseConfig()">Save & Connect</button>
+            <button class="btn btn-gray" onclick="testFirebase()">Test Connection</button>
+          </div>
+          <hr style="margin:16px 0">
+          <button class="btn btn-dark" onclick="clearAllData()">Clear All Data</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
-<div class="modal-overlay" id="orderModal"><div class="modal"><div class="modal-header"><h3>New Order <span id="orderSlipPreview"></span></h3><span onclick="closeOrderModal()" style="cursor:pointer">✕</span></div><form id="orderForm" style="padding:20px"><div class="form-grid"><div class="form-group"><label>Customer Name *</label><input id="f_name" required></div><div class="form-group"><label>Mobile *</label><input id="f_mobile" required></div><div class="form-group"><label>Order Type *</label><select id="f_type"><option>Shirt</option><option>Pant</option><option>Blazer</option><option>Panjabi</option><option>Suit</option><option>Safari</option><option>Other</option></select></div><div class="form-group"><label>Fabric</label><input id="f_fabric"></div><div class="form-group"><label>Quantity</label><input id="f_qty" type="number" value="1"></div><div class="form-group"><label>Delivery Date</label><input id="f_delivery" type="date"></div><div class="form-group"><label>Chest</label><input id="f_chest"></div><div class="form-group"><label>Length</label><input id="f_length"></div><div class="form-group"><label>Shoulder</label><input id="f_shoulder"></div><div class="form-group"><label>Sleeve</label><input id="f_sleeve"></div><div class="form-group"><label>Waist</label><input id="f_waist"></div><div class="form-group"><label>Total ৳</label><input id="f_total" type="number" required></div><div class="form-group"><label>Advance ৳</label><input id="f_advance" type="number" value="0"></div><div class="form-group full"><label>Notes</label><textarea id="f_notes" rows="3"></textarea></div><div class="form-group full"><button type="submit" class="btn btn-red" style="width:100%">Save Order - Live Sync</button></div></div></form></div></div>
+
+<!-- New Order Modal -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal">
+    <div class="modal-header"><h3>New Order <span id="orderSlipPreview"></span></h3><span onclick="closeOrderModal()" style="cursor:pointer">✕</span></div>
+    <form id="orderForm" style="padding:20px">
+      <div class="form-grid">
+        <div class="form-group"><label>Customer Name *</label><input id="f_name" required></div>
+        <div class="form-group"><label>Mobile *</label><input id="f_mobile" required></div>
+        <div class="form-group"><label>Order Type *</label><select id="f_type"><option>Shirt</option><option>Pant</option><option>Blazer</option><option>Panjabi</option><option>Suit</option><option>Safari</option><option>Other</option></select></div>
+        <div class="form-group"><label>Fabric</label><input id="f_fabric" placeholder="Cotton, etc"></div>
+        <div class="form-group"><label>Quantity</label><input id="f_qty" type="number" value="1"></div>
+        <div class="form-group"><label>Delivery Date</label><input id="f_delivery" type="date"></div>
+        <div class="form-group"><label>Chest</label><input id="f_chest"></div>
+        <div class="form-group"><label>Length</label><input id="f_length"></div>
+        <div class="form-group"><label>Shoulder</label><input id="f_shoulder"></div>
+        <div class="form-group"><label>Sleeve</label><input id="f_sleeve"></div>
+        <div class="form-group"><label>Waist</label><input id="f_waist"></div>
+        <div class="form-group"><label>Total ৳</label><input id="f_total" type="number" required></div>
+        <div class="form-group"><label>Advance ৳</label><input id="f_advance" type="number" value="0"></div>
+        <div class="form-group full"><label>Notes</label><textarea id="f_notes" rows="3"></textarea></div>
+        <div class="form-group full"><button type="submit" class="btn btn-red" style="width:100%">Save Order - Slip #</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Slip Detail Modal -->
 <div class="modal-overlay" id="slipModal"><div class="modal"><div class="modal-header"><h3>Order Detail</h3><span onclick="document.getElementById('slipModal').classList.remove('show')" style="cursor:pointer">✕</span></div><div id="slipDetail"></div></div></div>
+
+<!-- Sale Modal -->
 <div class="modal-overlay" id="saleModal"><div class="modal"><div class="modal-header"><h3>Sale Products</h3><span onclick="document.getElementById('saleModal').classList.remove('show')" style="cursor:pointer">✕</span></div><div style="padding:20px"><div id="saleProductList"></div><hr style="margin:12px 0"><div id="cartList"></div><div style="margin-top:12px;display:flex;justify-content:space-between"><b>Total:</b><b id="cartTotal">৳ 0</b></div><button class="btn btn-red" style="width:100%;margin-top:12px" onclick="checkoutSale()">Checkout</button></div></div></div>
+
 <script src="js/app.js"></script>
-<script>document.getElementById('todayDate').innerText=new Date().toLocaleDateString();document.addEventListener('click',e=>{if(!e.target.closest('.plus-btn')&&!e.target.closest('#plusDropdown'))document.getElementById('plusDropdown').classList.remove('show')});</script>
+<script>
+document.getElementById('todayDate').innerText = new Date().toLocaleDateString();
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.plus-btn') && !e.target.closest('#plusDropdown')) document.getElementById('plusDropdown').classList.remove('show');
+});
+setInterval(()=>{
+  const today = document.getElementById('todayDate');
+  if(today) today.innerText = new Date().toLocaleDateString();
+  // dashboard counts
+  if(db){
+    const tOrders = db.orders.filter(o=> new Date(o.createdAt).toDateString()===new Date().toDateString()).length;
+    const pending = db.orders.filter(o=>o.status==='Pending').length;
+    const att = JSON.parse(localStorage.getItem('raymond_attendance_v2')||'{}');
+    const todayAtt = att[new Date().toISOString().split('T')[0]]||{};
+    const present = Object.keys(todayAtt).length;
+    const el1=document.getElementById('todayOrders'); if(el1) el1.innerText=tOrders;
+    const el2=document.getElementById('pendingSlips'); if(el2) el2.innerText=pending;
+    const el3=document.getElementById('presentCount'); if(el3) el3.innerText=present;
+  }
+},1000);
+</script>
 </body>
 </html>

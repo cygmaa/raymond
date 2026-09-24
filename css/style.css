@@ -52,3 +52,14 @@ body{background:#f5f5f5;display:flex;height:100vh;overflow:hidden}
 .logo-preview img{width:100%;height:100%;object-fit:cover}
 .empty{padding:40px;text-align:center;color:#888}
 @media(max-width:768px){.sidebar{width:60px}.sidebar-header h1,.nav-item span{display:none}.form-grid{grid-template-columns:1fr}}
+
+/* ===== ADMIN LOGIN LOCK ===== */
+#loginOverlay{position:fixed;inset:0;background:#ffffff;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.login-box{width:300px;text-align:center}
+.login-label{color:#CC0000;font-size:14px;font-weight:400;letter-spacing:0.5px;margin-bottom:12px;font-family:Inter,system-ui,sans-serif}
+.login-input{width:100%;padding:10px 12px;border:1px solid #CC0000;outline:none;font-size:14px;text-align:center;letter-spacing:2px;background:#fff;color:#111}
+.login-input:focus{border:1.5px solid #CC0000;box-shadow:0 0 0 2px rgba(204,0,0,0.1)}
+.login-error{color:#CC0000;font-size:11px;margin-top:8px;min-height:14px;display:none}
+.login-error.show{display:block}
+.login-ok{margin-top:14px;width:100%;padding:10px;background:#CC0000;color:#fff;border:0;font-weight:600;cursor:pointer;letter-spacing:0.5px}
+.login-ok:hover{background:#a80000}
