@@ -1,1 +1,1 @@
-Put logo.png here
+logo
