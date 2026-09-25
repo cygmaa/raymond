@@ -4,63 +4,42 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Raymond Shop - Login</title>
-<link rel="stylesheet" href="css/style.css">
 <style>
-body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5;overflow:hidden}
-.login-bg{position:fixed;inset:0;background:rgba(255,255,255,0.15);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);z-index:1}
+body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5;font-family:Arial,sans-serif}
+.login-box{width:280px;text-align:center;background:rgba(255,255,255,0.95);padding:24px 20px;border:1px solid rgba(204,0,0,0.15);box-shadow:0 20px 60px rgba(0,0,0,0.15);border-radius:8px}
+.login-label{color:#CC0000;font-size:13px;font-weight:600;letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase}
+.login-input{width:100%;padding:10px 12px;border:1.5px solid #CC0000;outline:none;font-size:14px;text-align:center;letter-spacing:3px;background:#fff;color:#111;border-radius:4px}
+.login-error{color:#CC0000;font-size:11px;margin-top:10px;min-height:14px;display:none;font-weight:600}
+.login-error.show{display:block!important}
+.login-ok{margin-top:14px;padding:6px 28px;background:#CC0000;color:#fff;border:0;font-weight:700;cursor:pointer;font-size:12px;min-width:75px;border-radius:4px}
 </style>
 </head>
 <body>
-<div class="login-bg"></div>
-<div id="loginOverlay" class="show" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:rgba(255,255,255,0.15);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);">
+<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:rgba(255,255,255,0.15);backdrop-filter:blur(18px) saturate(180%);">
   <div class="login-box">
     <div class="login-label">Administrator</div>
-    <input type="password" id="adminCodeInput" class="login-input" placeholder="" autocomplete="off">
+    <input type="password" id="adminCodeInput" class="login-input" autocomplete="off">
     <div id="loginError" class="login-error">Wrong code! Enter correct code.</div>
     <button class="login-ok" onclick="checkAdminCode()">OK</button>
-    <div style="font-size:10px;color:#888;margin-top:10px">Two-Page Secure Login</div>
   </div>
 </div>
 <script>
 const DEFAULT_ADMIN_CODE="Raymond0@.";
 function getAdminCode(){return localStorage.getItem('admin_code')||DEFAULT_ADMIN_CODE;}
 function checkAdminCode(){
-  const inputEl=document.getElementById('adminCodeInput');
-  const error=document.getElementById('loginError');
-  const input=inputEl?inputEl.value:'';
-  if(input===getAdminCode()){
+  const el=document.getElementById('adminCodeInput');
+  const err=document.getElementById('loginError');
+  if(el.value===getAdminCode()){
     localStorage.setItem('raymond_auth','true');
     window.location.href='app/index.html';
-  } else {
-    if(error){error.innerText='Wrong code! Enter correct code.';error.classList.add('show');}
-    if(inputEl){inputEl.value='';inputEl.focus();}
+  }else{
+    err.innerText='Wrong code! Enter correct code.';
+    err.classList.add('show');
+    el.value=''; el.focus();
   }
 }
-document.addEventListener('keydown',function(e){
-  if(e.key==='Enter'){checkAdminCode();}
-  // Block inspect on login page
-  if(e.key==='F12' || (e.ctrlKey && e.shiftKey && (e.key==='I' || e.key==='J' || e.key==='C')) || (e.ctrlKey && (e.key==='u' || e.key==='s'))){
-    e.preventDefault(); return false;
-  }
-});
-document.addEventListener('contextmenu',function(e){
-  const overlay=document.getElementById('loginOverlay');
-  if(overlay && overlay.classList.contains('show')){
-    const isLogged=localStorage.getItem('raymond_auth')==='true';
-    if(!isLogged){e.preventDefault();return false;}
-  }
-},true);
-
-window.onload=function(){
-  const isLogged=localStorage.getItem('raymond_auth')==='true';
-  if(isLogged){
-    // Already logged in, go directly to app - password page won't show
-    window.location.href='app/index.html';
-  } else {
-    const inp=document.getElementById('adminCodeInput');
-    if(inp) setTimeout(()=>inp.focus(),300);
-  }
-}
+document.addEventListener('keydown',function(e){if(e.key==='Enter'){checkAdminCode();}});
+window.onload=function(){if(localStorage.getItem('raymond_auth')==='true'){window.location.href='app/index.html';}};
 </script>
 </body>
 </html>
