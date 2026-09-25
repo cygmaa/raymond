@@ -50,11 +50,17 @@ body{background:#f5f5f5;display:flex;height:100vh;overflow:hidden}
 .logo-preview img{width:100%;height:100%;object-fit:cover}
 .empty{padding:40px;text-align:center;color:#888}
 /* ===== ADMIN LOGIN LOCK - FIXED & SMALL OK ===== */
+
+.bulk-box{border:2px dashed #CC0000;background:#fff8f8;padding:10px;margin-bottom:12px}
+
+/* ===== ADMIN LOGIN LOCK - BLUR BACKGROUND VERSION ===== */
 #loginOverlay{
   position:fixed !important;
   top:0 !important; left:0 !important; right:0 !important; bottom:0 !important;
   width:100vw !important; height:100vh !important;
-  background:#ffffff !important;
+  background: rgba(255,255,255,0.15) !important;
+  backdrop-filter: blur(35px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(35px) saturate(180%) !important;
   z-index:999999 !important;
   display:none;
   align-items:center !important;
@@ -67,22 +73,26 @@ body{background:#f5f5f5;display:flex;height:100vh;overflow:hidden}
 .login-box{
   width:280px;
   text-align:center;
-  background:#fff;
-  padding:20px;
+  background: rgba(255,255,255,0.85);
+  padding:24px 20px;
+  border:1px solid rgba(204,0,0,0.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.5) inset;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .login-label{
   color:#CC0000;
   font-size:13px;
-  font-weight:400;
-  letter-spacing:1px;
-  margin-bottom:10px;
+  font-weight:600;
+  letter-spacing:1.5px;
+  margin-bottom:14px;
   font-family:Inter,system-ui,sans-serif;
   text-transform:uppercase;
 }
 .login-input{
   width:100%;
-  padding:8px 10px;
-  border:1px solid #CC0000;
+  padding:10px 12px;
+  border:1.5px solid #CC0000;
   outline:none;
   font-size:14px;
   text-align:center;
@@ -91,27 +101,38 @@ body{background:#f5f5f5;display:flex;height:100vh;overflow:hidden}
   color:#111;
   border-radius:0;
 }
-.login-input:focus{border:1.5px solid #CC0000;}
+.login-input:focus{border:2px solid #CC0000; box-shadow:0 0 0 3px rgba(204,0,0,0.1);}
 .login-error{
   color:#CC0000;
   font-size:11px;
-  margin-top:8px;
+  margin-top:10px;
   min-height:14px;
   display:none;
   font-family:Inter,sans-serif;
+  font-weight:600;
 }
 .login-error.show{display:block !important;}
 .login-ok{
-  margin-top:12px;
-  padding:6px 24px;
+  margin-top:14px;
+  padding:6px 28px;
   background:#CC0000;
   color:#fff;
   border:0;
-  font-weight:600;
+  font-weight:700;
   cursor:pointer;
   font-size:12px;
-  min-width:70px;
+  min-width:75px;
   border-radius:0;
+  letter-spacing:0.5px;
 }
 .login-ok:hover{background:#a80000;}
+/* Hardcore Security - Heavy Blur when locked */
+#loginOverlay *{user-select:none !important; -webkit-user-select:none !important;}
+body.locked{overflow:hidden !important;}
+body.locked .main, body.locked .sidebar{
+  filter: blur(25px) saturate(120%) brightness(0.9) !important;
+  pointer-events:none !important;
+  transform: scale(1.02);
+  transition: filter 0.3s ease;
+}
 .bulk-box{border:2px dashed #CC0000;background:#fff8f8;padding:10px;margin-bottom:12px}
