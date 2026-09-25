@@ -7,137 +7,132 @@
 <link rel="stylesheet" href="../css/style.css">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+*{font-size:13px !important}
+h2{font-size:18px !important}
+h3{font-size:15px !important}
+h4{font-size:14px !important}
+.sub-sidebar{width:210px;background:#fff;border-right:1px solid #ededed;display:none;flex-direction:column}
+.sub-sidebar.show{display:flex}
+.sub-sidebar-header{padding:14px;font-size:11px !important;font-weight:700;letter-spacing:0.8px;color:#666;text-transform:uppercase;border-bottom:1px solid #ededed}
+.sub-nav-item{padding:10px 14px;font-size:13px !important;color:#333;cursor:pointer;border-left:3px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:18px}
+.sub-nav-item.active{background:#e8f0fe;border-left-color:#1a73e8;color:#1a73e8;font-weight:600}
+.sub-nav-item:hover{background:#f5f5f5}
+.sidebar{display:flex;flex-direction:column;justify-content:space-between;width:150px;background:#111;color:#fff;min-height:100vh}
+.sidebar nav{flex:1}
+.sidebar-bottom{border-top:1px solid #222}
+.top-bar{position:relative;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff;border-bottom:1px solid #ededed;min-height:48px}
+.top-bar h2{margin:0;text-transform:lowercase}
+.top-bar-stats{display:flex;gap:16px;align-items:center;font-size:13px !important}
+.header-center-plus{position:absolute;left:50%;transform:translateX(-50%);width:36px;height:36px;background:#CC0000;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px !important;cursor:pointer;z-index:20}
+.plus-dropdown{display:none;position:absolute;top:50px;left:50%;transform:translateX(-50%);background:#fff;box-shadow:0 8px 24px rgba(0,0,0,0.18);border-radius:8px;padding:6px 0;min-width:160px;z-index:100}
+.plus-dropdown.show{display:block}
+.plus-dropdown div{padding:10px 16px;cursor:pointer;font-size:13px !important}
+.plus-dropdown div:hover{background:#f5f5f5}
+.dashboard-wrapper{position:relative;min-height:calc(100vh - 60px);padding-bottom:160px;overflow:hidden}
+.dashboard-curve{position:absolute;bottom:0;left:0;right:0;height:120px;background:#CC0000;z-index:1}
+.dashboard-curve::before{content:'';position:absolute;top:-28px;left:0;right:0;height:56px;background:#fff;border-radius:0 0 50% 50% / 0 0 100% 100%;z-index:2}
+.dashboard-curve::after{content:'';position:absolute;top:-34px;left:0;right:0;height:56px;background:#d0d0d0;border-radius:0 0 50% 50% / 0 0 100% 100%;z-index:1}
+.dashboard-plus-btn{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);width:60px;height:60px;background:#CC0000;border-radius:50%;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;color:#fff;font-size:32px !important;font-weight:300;cursor:pointer;z-index:10;line-height:1}
+.dashboard-plus-menu{position:absolute;bottom:150px;left:50%;transform:translateX(-50%);background:#fff;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:6px 0;min-width:170px;display:none;z-index:11}
+.dashboard-plus-menu.show{display:block}
+.dashboard-plus-menu div{padding:10px 16px;font-size:13px !important;cursor:pointer}
+.dashboard-plus-menu div:hover{background:#f5f5f5}
+.daily-presents-card{max-width:480px;margin:24px auto;background:#fff;border:1px solid #ededed;border-radius:8px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.tab-content{padding:0 !important}
+.main-content{flex:1;overflow:auto;background:#fafafa}
+body{display:flex;margin:0;min-height:100vh;font-family:Arial,sans-serif}
+.btn{padding:8px 14px;border:0;border-radius:4px;cursor:pointer;font-size:13px !important}
+.btn-red{background:#CC0000;color:#fff}
+.btn-blue{background:#1a73e8;color:#fff}
+.btn-gray{background:#eee;color:#333}
+</style>
 </head>
-
-<script>
-// Auth guard for Two-Page - if not logged, go back to root login
-(function(){
-  const isLogged = localStorage.getItem('raymond_auth')==='true';
-  if(!isLogged){
-    window.location.href='../index.html';
-  }
-})();
-</script>
-<body >
-
-
+<script>(function(){const isLogged=localStorage.getItem('raymond_auth')==='true';if(!isLogged){window.location.href='../index.html';}})();</script>
+<body>
 <div class="sidebar">
-  <div class="sidebar-header">
-    <div class="logo" id="sidebarLogo">R</div>
-    <h1>RAYMOND SHOP</h1>
+  <div>
+    <div class="sidebar-header" style="padding:14px;display:flex;gap:8px;align-items:center;border-bottom:1px solid #222"><div class="logo" style="width:28px;height:28px;background:#CC0000;display:flex;align-items:center;justify-content:center;font-weight:700">R</div><h1 style="font-size:12px !important;margin:0;line-height:12px">RAYMOND<br>SHOP</h1></div>
+    <nav style="padding-top:8px">
+      <div class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')" style="padding:10px 14px;cursor:pointer;font-size:13px !important">Dashboard</div>
+      <div class="nav-item" id="nav-order-slip" onclick="switchTab('order-slip')" style="padding:10px 14px;cursor:pointer;font-size:13px !important">Order Slip</div>
+      <div class="nav-item" id="nav-customers" onclick="switchTab('customers')" style="padding:10px 14px;cursor:pointer;font-size:13px !important">Customers</div>
+      <div class="nav-item" id="nav-portal" onclick="switchTab('portal')" style="padding:10px 14px;cursor:pointer;font-size:13px !important">Portal</div>
+    </nav>
   </div>
-  <nav>
-    <div class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')"><span>Dashboard</span></div>
-    <div class="nav-item" id="nav-order-slip" onclick="switchTab('order-slip')"><span>Order Slip</span></div>
-    <div class="nav-item" id="nav-daily-presents" onclick="switchTab('daily-presents')"><span>Daily Presents</span></div>
-    <div class="nav-item" id="nav-customers" onclick="switchTab('customers')"><span>Customers</span></div>
-    <div class="nav-item" id="nav-portal" onclick="switchTab('portal')"><span>Portal</span></div>
-    <div class="nav-item" id="nav-settings" onclick="switchTab('settings')"><span>Settings</span></div>
-  </nav>
-  <div style="padding:10px;font-size:10px;color:#666;border-top:1px solid #222">BDT ৳ | Live Firebase | Secure | 150px</div>
+  <div class="sidebar-bottom"><div style="border-top:1px solid #222;"></div><div class="nav-item" id="nav-settings" onclick="switchTab('settings')" style="padding:10px 14px;cursor:pointer;font-size:13px !important">Settings</div></div>
 </div>
-
-<!-- SUB SIDEBAR FOR PORTAL -->
 <div class="sub-sidebar" id="portalSubSidebar">
   <div class="sub-sidebar-header">Portal Menu</div>
-  <div class="sub-nav-item active" id="sub-readymade" onclick="switchPortalSub('readymade')"><span>📦 Readymade Product Catalog</span></div>
-  <div class="sub-nav-item" id="sub-tailored" onclick="switchPortalSub('tailored')"><span>✂️ Tailored Product</span></div>
-  <div class="sub-nav-item" id="sub-size" onclick="switchPortalSub('size')"><span>📏 Product Size Segments</span></div>
-  <div class="sub-nav-item" id="sub-staff" onclick="switchPortalSub('staff')"><span>👥 Staff Management</span></div>
+  <div class="sub-nav-item active" id="sub-readymade" onclick="switchPortalSub('readymade')">Readymade Product Catalog</div>
+  <div class="sub-nav-item" id="sub-tailored" onclick="switchPortalSub('tailored')">Tailored Product</div>
+  <div class="sub-nav-item" id="sub-size" onclick="switchPortalSub('size')">Product Size Segments</div>
+  <div class="sub-nav-item" id="sub-staff" onclick="switchPortalSub('staff')">Staff Management</div>
 </div>
-
-<!-- SUB SIDEBAR FOR SETTINGS -->
 <div class="sub-sidebar" id="settingsSubSidebar">
   <div class="sub-sidebar-header">Settings Menu</div>
-  <div class="sub-nav-item active" id="sub-shopinfo" onclick="switchSettingsSub('shopinfo')"><span>🏪 Shop Info</span></div>
-  <div class="sub-nav-item" id="sub-firebase" onclick="switchSettingsSub('firebase')"><span>🔥 Connect Firebase</span></div>
-  <div class="sub-nav-item" id="sub-security" onclick="switchSettingsSub('security')"><span>🔒 Admin Security Code</span></div>
+  <div class="sub-nav-item active" id="sub-shopinfo" onclick="switchSettingsSub('shopinfo')">Company Info</div>
+  <div class="sub-nav-item" id="sub-security" onclick="switchSettingsSub('security')">Admin Security Code</div>
+  <div class="sub-nav-item" id="sub-firebase" onclick="switchSettingsSub('firebase')">Firebase Settings</div>
+  <div class="sub-nav-item" id="sub-data" onclick="switchSettingsSub('data')">Data Management</div>
 </div>
-
-<div class="main">
-  <div class="topbar"><button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
-    <h2 id="topTitle">Dashboard</h2>
-    <div style="display:flex;gap:16px;font-size:13px">
+<div class="main-content">
+  <div class="top-bar">
+    <h2 id="topTitle">dashboard</h2>
+    <div class="header-center-plus" onclick="toggleHeaderDropdown()">+</div>
+    <div class="top-bar-stats">
       <span>Orders: <b id="dashOrderCount">0</b></span>
       <span>Customers: <b id="dashCustomerCount">0</b></span>
       <span>Total: <b id="dashSaleTotal">৳ 0</b></span>
     </div>
+    <div id="plusDropdown" class="plus-dropdown">
+      <div onclick="openNewOrder();toggleHeaderDropdown()">New Order</div>
+      <div onclick="alert('Sale Product coming soon');toggleHeaderDropdown()">Sale Product</div>
+    </div>
   </div>
-  <div class="content">
-    <div id="tab-dashboard" class="tab-content">
-      <div class="dashboard-center">
-        <div class="plus-btn" onclick="toggleDropdown()">+</div>
-        <div class="dropdown" id="plusDropdown">
-          <div class="dropdown-item" onclick="openNewOrder()">📝 New Order - Tailored</div>
-          <div class="dropdown-item" onclick="openSale()">🛒 Sale Products</div>
+  <div id="tab-dashboard" class="tab-content" style="display:block;">
+    <div class="dashboard-wrapper">
+      <div style="padding:20px;">
+        <h3 style="margin:0 0 12px 0">Dashboard Overview</h3>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:12px;">
+          <div style="background:#fff;border:1px solid #ededed;padding:16px;border-radius:8px;"><div style="color:#666;margin-bottom:6px">Orders</div><b id="dashOrderCount2" style="font-size:20px !important">0</b></div>
+          <div style="background:#fff;border:1px solid #ededed;padding:16px;border-radius:8px;"><div style="color:#666;margin-bottom:6px">Customers</div><b id="dashCustomerCount2" style="font-size:20px !important">0</b></div>
+          <div style="background:#fff;border:1px solid #ededed;padding:16px;border-radius:8px;"><div style="color:#666;margin-bottom:6px">Total Sales</div><b id="dashSaleTotal2" style="font-size:20px !important">৳ 0</b></div>
         </div>
-        <p style="color:#888;margin-top:10px">Click + to create New Order or Sell Products</p>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px;width:100%;max-width:600px">
-          <div class="card"><small>Today Orders</small><h3 id="todayOrders">0</h3></div>
-          <div class="card"><small>Pending Slips</small><h3 id="pendingSlips">0</h3></div>
-          <div class="card"><small>Staff Present</small><h3 id="presentCount">0</h3></div>
+        <div class="daily-presents-card">
+          <h4 style="margin:0 0 12px 0;">Daily Presents - <span id="dashDate"></span></h4>
+          <div id="attendanceList"></div>
         </div>
+      </div>
+      <div class="dashboard-curve"></div>
+      <div class="dashboard-plus-btn" onclick="toggleDashboardPlus()">+</div>
+      <div id="dashboardPlusMenu" class="dashboard-plus-menu">
+        <div onclick="openNewOrder();toggleDashboardPlus()">New Order</div>
+        <div onclick="alert('Sale Product coming soon');toggleDashboardPlus()">Sale Product</div>
       </div>
     </div>
-
-    <div id="tab-order-slip" class="tab-content" style="display:none"><div id="orderSlipList"></div></div>
-    <div id="tab-daily-presents" class="tab-content" style="display:none"><h3 style="margin-bottom:12px">Today Attendance - <span id="todayDate"></span> (Auto reset 11:59:59 PM)</h3><div id="attendanceList"></div><div id="historyView" style="margin-top:20px"></div></div>
-    <div id="tab-customers" class="tab-content" style="display:none"><div id="customerList"></div></div>
-
-    <!-- PORTAL TABS -->
-    <div id="tab-portal" class="tab-content" style="display:none">
-      <div id="portal-readymade" class="portal-sub-content">
-        <div class="card google"><h3>📦 Readymade Product Catalog - Products (For Sale)</h3>
-        <p style="font-size:12px;color:#666;margin:8px 0">Sell products from Dashboard > Sale Products</p>
-        <div class="form-grid" style="margin-top:12px"><div class="form-group"><label>Product Name</label><input id="prodName"></div><div class="form-group"><label>Price ৳</label><input id="prodPrice" type="number"></div><div class="form-group"><label>Stock</label><input id="prodStock" type="number"></div><div class="form-group full"><button class="btn btn-red" onclick="addProduct()">Add Product</button></div></div><div id="portalProductList" style="margin-top:16px"></div></div>
-      </div>
-      <div id="portal-tailored" class="portal-sub-content" style="display:none">
-        <div class="card google"><h3>✂️ Tailored Product - Manage Products for New Order Dropdown</h3>
-        <p style="font-size:12px;color:#666;margin:8px 0">Add product names here. They will appear in New Order > Product dropdown. Saved to Firebase.</p>
-        <div class="form-grid" style="margin-top:12px"><div class="form-group"><label>Tailored Product Name</label><input id="tailoredName" placeholder="e.g. Shirt, Pant, Panjabi"></div><div class="form-group full"><button class="btn btn-blue" onclick="addTailoredProduct()">Add Tailored Product</button></div></div><div id="tailoredProductList" style="margin-top:16px"></div></div>
-      </div>
-      <div id="portal-size" class="portal-sub-content" style="display:none">
-        <div class="card google"><h3>📏 Product Size Segments - Manage Measurements per Product</h3>
-        <p style="font-size:12px;color:#666;margin:8px 0">Select a tailored product, then add measurement fields like Height, Chest, Belly, Sleeve. Only those will show in New Order.</p>
-        <div class="form-group"><label>Select Tailored Product</label><select id="sizeProductSelect" onchange="renderSizeSegments()"></select></div>
-        <div id="sizeSegmentsList" style="margin:12px 0"></div>
-        <div class="form-grid" style="margin-top:12px;border-top:1px solid #eee;padding-top:12px"><div class="form-group"><label>New Measurement Name</label><input id="newSizeName" placeholder="e.g. Height, Chest, Belly"></div><div class="form-group full"><button class="btn btn-blue" onclick="addSizeSegment()">Add Measurement Field</button></div></div>
-        </div>
-      </div>
-      <div id="portal-staff" class="portal-sub-content" style="display:none">
-        <div class="card google"><h3>👥 Staff Management</h3><div class="form-grid" style="margin-top:12px"><div class="form-group"><label>Name</label><input id="staffName"></div><div class="form-group"><label>Role</label><select id="staffRole"><option>Tailor</option><option>Cutter</option><option>Salesman</option><option>Master</option></select></div><div class="form-group"><label>Phone</label><input id="staffPhone"></div><div class="form-group"><label>Salary ৳</label><input id="staffSalary" type="number"></div><div class="form-group full"><button class="btn btn-red" onclick="addStaff()">Add Staff</button></div></div><div id="portalStaffList" style="margin-top:16px"></div></div>
-      </div>
-    </div>
-
-    <!-- SETTINGS TABS -->
-    <div id="tab-settings" class="tab-content" style="display:none">
-      <div id="settings-shopinfo" class="settings-sub-content">
-        <div class="card google"><h3>🏪 Shop Information</h3><div class="form-group" style="margin-top:12px"><label>Shop Name</label><input id="shopName" value="Raymond Shop"></div><div class="form-group"><label>Address</label><input id="shopAddress"></div><div class="form-group"><label>Phone</label><input id="shopPhone"></div><div class="form-group"><label>Logo (../img/ folder)</label><div class="logo-preview" id="logoPreview">Logo</div><input type="file" accept="image/*" onchange="handleLogoUpload(this)" style="margin-top:8px"><small>Upload logo - saves to browser. Download and put in ../img/ folder for permanent.</small></div><button class="btn btn-red" onclick="saveShopInfo()">Save Shop Info</button></div>
-      </div>
-      <div id="settings-firebase" class="settings-sub-content" style="display:none">
-        <div class="card google"><h3>🔥 Connect Firebase - Live Sync - Smart Paste + Hardcoded</h3><p style="font-size:11px;color:#666;margin:8px 0">Config is hardcoded + editable. Hardcoded ensures Incognito & other devices work without manual setup. Bulk paste 6 codes at once below.</p>
-          <div class="bulk-box"><label style="font-size:11px;font-weight:700;display:block;margin-bottom:6px;color:#CC0000">PASTE FULL CONFIG HERE (ONE-CLICK) - 6টা একসাথে পেস্ট করুন</label><textarea id="bulkFirebasePaste" rows="7" placeholder='apiKey: "AIzaSy...",&#10;authDomain: "raymond-df295.firebaseapp.com",&#10;projectId: "raymond-df295",&#10;storageBucket: "raymond-df295.firebasestorage.app",&#10;messagingSenderId: "36554452985",&#10;appId: "1:36554452985:web:51546aaf1ba16d536d5728"' style="width:100%;padding:10px;border:1px solid #CC0000;font-size:12px;font-family:monospace;background:#fff"></textarea><button class="btn btn-red" onclick="parseBulkConfig()" style="margin-top:8px;width:100%">Auto Fill 6 Fields + Save & Connect</button></div>
-          <div style="text-align:center;margin:8px 0;font-size:11px;color:#888">--- OR Fill Manually ---</div>
-          <div id="fbStatus" style="padding:8px;background:#f0f0f0;font-size:12px;margin-bottom:12px">Connecting...</div>
-          <div class="form-group"><label>APIKEY</label><input id="fb_apiKey"></div><div class="form-group"><label>AUTHDOMAIN</label><input id="fb_authDomain"></div><div class="form-group"><label>PROJECTID</label><input id="fb_projectId"></div><div class="form-group"><label>STORAGEBUCKET</label><input id="fb_storageBucket"></div><div class="form-group"><label>MESSAGINGSENDERID</label><input id="fb_messagingSenderId"></div><div class="form-group"><label>APPID</label><input id="fb_appId"></div>
-          <div style="display:flex;gap:8px"><button class="btn btn-red" onclick="saveFirebaseConfig()">Save & Override</button><button class="btn btn-gray" onclick="testFirebase()">Test Connection</button></div>
-          <hr style="margin:16px 0"><button class="btn btn-dark" onclick="clearAllData()">Clear All Data (Local + Firebase)</button>
-        </div>
-      </div>
-      <div id="settings-security" class="settings-sub-content" style="display:none">
-        <div class="card google" style="border:1px dashed #CC0000;background:#fff8f8"><h3>🔒 Admin Security Code</h3><p style="font-size:11px;color:#666;margin:8px 0">Default: Raymond0@. - Enter opens app, browser remembers. Press Enter key also works.</p><div class="form-group"><label>Current Code</label><input type="password" id="currentAdminCode" placeholder="Current code"></div><div class="form-group"><label>New Code</label><input type="password" id="newAdminCode" placeholder="New code"></div><div class="form-group"><label>Confirm New Code</label><input type="password" id="confirmAdminCode" placeholder="Confirm new code"></div><button class="btn btn-red" onclick="changeAdminCode()">Change Code</button><button class="btn btn-gray" onclick="logoutAdmin()" style="margin-left:8px">Logout (Ask code again next time)</button></div>
-      </div>
-    </div>
-
+  </div>
+  <div id="tab-order-slip" class="tab-content" style="display:none;padding:16px !important"><div id="orderSlipList"></div></div>
+  <div id="tab-customers" class="tab-content" style="display:none;padding:16px !important"><div id="customerList"></div></div>
+  <div id="tab-portal" class="tab-content" style="display:none;padding:16px !important">
+    <div id="portal-readymade" class="portal-sub-content" style="display:block;"><h3>Readymade Product Catalog</h3><div style="display:flex;gap:8px;margin:12px 0;"><input id="prodName" placeholder="Product Name" style="flex:1;padding:8px;border:1px solid #ddd"><input id="prodPrice" placeholder="Price" type="number" style="width:100px;padding:8px;border:1px solid #ddd"><input id="prodStock" placeholder="Stock" type="number" style="width:80px;padding:8px;border:1px solid #ddd"><button class="btn btn-red" onclick="addProduct()">Add</button></div><div id="portalProductList"></div></div>
+    <div id="portal-tailored" class="portal-sub-content" style="display:none;"><h3>Tailored Product - Manage Products for New Order Dropdown</h3><p style="font-size:13px !important;color:#666;">Add product names here. They will appear in New Order > Product dropdown. Saved to Firebase.</p><div style="margin:12px 0;"><label style="font-size:11px;font-weight:600;">TAILORED PRODUCT NAME</label><input id="tailoredName" placeholder="e.g. Shirt, Pant, Panjabi" style="width:100%;padding:8px;border:1px solid #ddd;margin-top:4px"><button class="btn btn-blue" style="margin-top:8px" onclick="addTailoredProduct()">Add Tailored Product</button></div><div id="tailoredProductList"></div></div>
+    <div id="portal-size" class="portal-sub-content" style="display:none;"><h3>Product Size Segments</h3><div style="display:flex;gap:8px;align-items:end;margin:12px 0;"><div style="flex:1"><label style="font-size:11px">Select Product</label><select id="sizeProductSelect" onchange="renderSizeSegments()" style="width:100%;padding:8px;border:1px solid #ddd"><option value="">Select</option></select></div><div style="flex:1"><label style="font-size:11px">Segment Name</label><input id="newSizeName" placeholder="e.g. Chest, Length" style="width:100%;padding:8px;border:1px solid #ddd"></div><button class="btn btn-red" onclick="addSizeSegment()">Add</button></div><div id="sizeSegmentsList"></div></div>
+    <div id="portal-staff" class="portal-sub-content" style="display:none;"><h3>Staff Management</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;"><input id="staffName" placeholder="Name" style="padding:8px;border:1px solid #ddd"><input id="staffRole" placeholder="Role" style="padding:8px;border:1px solid #ddd"><input id="staffPhone" placeholder="Phone" style="padding:8px;border:1px solid #ddd"><input id="staffSalary" placeholder="Salary" style="padding:8px;border:1px solid #ddd"></div><button class="btn btn-red" onclick="addStaff()">Add Staff</button><div id="portalStaffList" style="margin-top:12px"></div></div>
+  </div>
+  <div id="tab-settings" class="tab-content" style="display:none;padding:16px !important">
+    <div id="settings-shopinfo" class="settings-sub-content" style="display:block;"><h3>Company Info</h3><div style="max-width:400px;display:grid;gap:12px;margin-top:12px;"><input id="shopName" placeholder="Company Name" style="padding:8px;border:1px solid #ddd"><input id="shopAddress" placeholder="Address" style="padding:8px;border:1px solid #ddd"><input id="shopPhone" placeholder="Phone" style="padding:8px;border:1px solid #ddd"><button class="btn btn-red" onclick="saveShopInfo()">Save Company Info</button></div></div>
+    <div id="settings-security" class="settings-sub-content" style="display:none;"><h3>Admin Security Code</h3><div style="max-width:400px;display:grid;gap:12px;margin-top:12px;"><input id="currentAdminCode" type="password" placeholder="Current Code" style="padding:8px;border:1px solid #ddd"><input id="newAdminCode" type="password" placeholder="New Code" style="padding:8px;border:1px solid #ddd"><input id="confirmAdminCode" type="password" placeholder="Confirm New Code" style="padding:8px;border:1px solid #ddd"><button class="btn btn-red" onclick="changeAdminCode()">Change Code</button></div></div>
+    <div id="settings-firebase" class="settings-sub-content" style="display:none;"><h3>Firebase Settings - Live Sync</h3><div style="background:#fff3cd;padding:12px;border-radius:6px;font-size:13px !important;margin:12px 0;">Paste your Firebase config below.</div><textarea id="bulkFirebasePaste" placeholder='Paste like: apiKey: "AIza..."' style="width:100%;height:100px;padding:8px;border:1px solid #ddd"></textarea><button class="btn btn-red" onclick="parseBulkConfig()" style="margin:8px 0">Connect Firebase (Paste Above)</button><div id="fbStatus" style="margin:8px 0;font-size:13px !important;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:600px"><input id="fb_apiKey" placeholder="apiKey" style="padding:6px;border:1px solid #ddd;font-size:11px"><input id="fb_authDomain" placeholder="authDomain" style="padding:6px;border:1px solid #ddd;font-size:11px"><input id="fb_projectId" placeholder="projectId" style="padding:6px;border:1px solid #ddd;font-size:11px"><input id="fb_storageBucket" placeholder="storageBucket" style="padding:6px;border:1px solid #ddd;font-size:11px"><input id="fb_messagingSenderId" placeholder="messagingSenderId" style="padding:6px;border:1px solid #ddd;font-size:11px"><input id="fb_appId" placeholder="appId" style="padding:6px;border:1px solid #ddd;font-size:11px"></div><div style="margin-top:12px;display:flex;gap:8px"><button class="btn btn-red" onclick="saveFirebaseConfig()">Save Config</button><button class="btn btn-gray" onclick="testFirebase()">Test Connection</button></div></div>
+    <div id="settings-data" class="settings-sub-content" style="display:none;"><h3>Data Management</h3><button class="btn btn-red" onclick="clearAllData()">Clear All Data</button></div>
   </div>
 </div>
-
-<div class="modal-overlay" id="orderModal"><div class="modal"><div class="modal-header"><h3>New Order <span id="orderSlipPreview"></span></h3><span onclick="closeOrderModal()" style="cursor:pointer">✕</span></div><form id="orderForm" style="padding:20px"><div class="form-grid"><div class="form-group"><label>Customer Name *</label><input id="f_name" required></div><div class="form-group"><label>Mobile *</label><input id="f_mobile" required></div><div class="form-group full"><label>Tailored Product * (from Tailored Product Menu)</label><select id="f_type" onchange="renderDynamicSizes()"></select><small id="noProductMsg" style="color:#CC0000;display:none">No tailored products! Add in Portal > Tailored Product</small></div><div class="form-group"><label>Fabric</label><input id="f_fabric"></div><div class="form-group"><label>Quantity</label><input id="f_qty" type="number" value="1"></div><div class="form-group"><label>Delivery Date</label><input id="f_delivery" type="date"></div><div id="dynamicSizeFields" class="form-grid" style="grid-column:1 / -1;display:contents"></div><div class="form-group"><label>Total ৳</label><input id="f_total" type="number" required></div><div class="form-group"><label>Advance ৳</label><input id="f_advance" type="number" value="0"></div><div class="form-group full"><label>Notes</label><textarea id="f_notes" rows="3"></textarea></div><div class="form-group full"><button type="submit" class="btn btn-red" style="width:100%">Save Order - Live Sync</button></div></div></form></div></div>
-
-<div class="modal-overlay" id="slipModal"><div class="modal"><div class="modal-header"><h3>Order Detail</h3><span onclick="document.getElementById('slipModal').classList.remove('show')" style="cursor:pointer">✕</span></div><div id="slipDetail"></div></div></div>
-<div class="modal-overlay" id="saleModal"><div class="modal"><div class="modal-header"><h3>Sale Products</h3><span onclick="document.getElementById('saleModal').classList.remove('show')" style="cursor:pointer">✕</span></div><div style="padding:20px"><div id="saleProductList"></div><hr style="margin:12px 0"><div id="cartList"></div><div style="margin-top:12px;display:flex;justify-content:space-between"><b>Total:</b><b id="cartTotal">৳ 0</b></div><button class="btn btn-red" style="width:100%;margin-top:12px" onclick="checkoutSale()">Checkout</button></div></div></div>
-
-<script src="../js/app.js"></script>
-<script>document.getElementById('todayDate').innerText=new Date().toLocaleDateString();document.addEventListener('click',e=>{if(!e.target.closest('.plus-btn')&&!e.target.closest('#plusDropdown')){const dd=document.getElementById('plusDropdown'); if(dd) dd.classList.remove('show')}});</script>
+<div id="orderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;"><div style="background:#fff;padding:20px;border-radius:8px;width:90%;max-width:500px;max-height:90vh;overflow:auto;"><h3>New Order <span id="orderSlipPreview"></span></h3><form id="orderForm" style="display:grid;gap:10px;margin-top:12px;"><input id="f_name" placeholder="Customer Name" required style="padding:8px;border:1px solid #ddd"><input id="f_mobile" placeholder="Mobile" required style="padding:8px;border:1px solid #ddd"><select id="f_type" onchange="renderDynamicSizes()" style="padding:8px;border:1px solid #ddd"></select><div id="dynamicSizeFields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><div id="noProductMsg" style="display:none;background:#fff3cd;padding:8px;font-size:13px !important">No Tailored Products!</div><input id="f_fabric" placeholder="Fabric" style="padding:8px;border:1px solid #ddd"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="f_qty" type="number" value="1" placeholder="Qty" style="padding:8px;border:1px solid #ddd"><input id="f_delivery" type="date" style="padding:8px;border:1px solid #ddd"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="f_total" type="number" placeholder="Total" style="padding:8px;border:1px solid #ddd"><input id="f_advance" type="number" placeholder="Advance" style="padding:8px;border:1px solid #ddd"></div><textarea id="f_notes" placeholder="Notes" style="padding:8px;border:1px solid #ddd"></textarea><div style="display:flex;gap:8px;justify-content:end"><button type="button" class="btn btn-gray" onclick="closeOrderModal()">Cancel</button><button type="submit" class="btn btn-red">Save Order</button></div></form></div></div>
+<div id="slipModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;"><div style="background:#fff;padding:20px;border-radius:8px;min-width:300px"><div id="slipDetail"></div><button class="btn btn-gray" onclick="document.getElementById('slipModal').style.display='none'" style="margin-top:12px">Close</button></div></div>
+<script src="data:application/javascript;base64,Y29uc3QgREVGQVVMVF9GSVJFQkFTRV9DT05GSUc9e2FwaUtleToiQUl6YVN5RG11cGlUVHV4d1laUGNpLWxGZWhVTDFwTnY5VFY4Q0U4IixhdXRoRG9tYWluOiJyYXltb25kLWRmMjk1LmZpcmViYXNlYXBwLmNvbSIscHJvamVjdElkOiJyYXltb25kLWRmMjk1IixzdG9yYWdlQnVja2V0OiJyYXltb25kLWRmMjk1LmZpcmViYXNlc3RvcmFnZS5hcHAiLG1lc3NhZ2luZ1NlbmRlcklkOiIzNjU1NDQ1Mjk4NSIsYXBwSWQ6IjE6MzY1NTQ0NTI5ODU6d2ViOjUxNTQ2YWFmMWJhMTZkNTM2ZDU3MjgifTsKbGV0IGRiPXtvcmRlcnM6W10sY3VzdG9tZXJzOltdLHN0YWZmOltdLHByb2R1Y3RzOltdLHRhaWxvcmVkUHJvZHVjdHM6W10sc2l6ZVNlZ21lbnRzOnt9LG5leHRTbGlwOjEsbGFzdFN5bmM6MH07CnRyeXtsZXQgZD1sb2NhbFN0b3JhZ2UuZ2V0SXRlbSgncmF5bW9uZF92Ml9kYicpO2lmKGQpe2RiPUpTT04ucGFyc2UoZCk7aWYoIWRiLnRhaWxvcmVkUHJvZHVjdHMpZGIudGFpbG9yZWRQcm9kdWN0cz1bXTtpZighZGIuc2l6ZVNlZ21lbnRzKWRiLnNpemVTZWdtZW50cz17fTt9fWNhdGNoe30KZnVuY3Rpb24gc2F2ZURCKCl7ZGIubGFzdFN5bmM9RGF0ZS5ub3coKTtsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgncmF5bW9uZF92Ml9kYicsSlNPTi5zdHJpbmdpZnkoZGIpKTtpZih3aW5kb3cuZmlyZWJhc2VSZWFkeSlzeW5jVG9GaXJlYmFzZShkYik7dXBkYXRlRGFzaCgpO30KbGV0IGZpcmViYXNlUmVhZHk9ZmFsc2UsZmJfZGI9bnVsbDsKZnVuY3Rpb24gZ2V0RmlyZWJhc2VDb25maWcoKXt0cnl7bGV0IGM9SlNPTi5wYXJzZShsb2NhbFN0b3JhZ2UuZ2V0SXRlbSgnZmlyZWJhc2VfY29uZmlnJykpO2lmKGMmJmMuYXBpS2V5KXJldHVybiBjfWNhdGNoe31yZXR1cm4gREVGQVVMVF9GSVJFQkFTRV9DT05GSUc7fQpmdW5jdGlvbiBpbml0RmlyZWJhc2UoKXt0cnl7bGV0IGNmZz1nZXRGaXJlYmFzZUNvbmZpZygpO2lmKCFmaXJlYmFzZS5hcHBzLmxlbmd0aClmaXJlYmFzZS5pbml0aWFsaXplQXBwKGNmZyk7ZmJfZGI9ZmlyZWJhc2UuZmlyZXN0b3JlKCk7ZmlyZWJhc2VSZWFkeT10cnVlO3dpbmRvdy5maXJlYmFzZVJlYWR5PXRydWU7bGV0IHN0PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdmYlN0YXR1cycpO2lmKHN0KXtzdC5pbm5lclRleHQ9J+KckyBDb25uZWN0ZWQgLSBMaXZlIFN5bmMgQWN0aXZlIChQcm9qZWN0OiAnK2NmZy5wcm9qZWN0SWQrJykgLSBGSVhFRCBOT1cnO3N0LnN0eWxlLmNvbG9yPSdncmVlbic7fX1jYXRjaChlKXt9fQpmdW5jdGlvbiBzeW5jVG9GaXJlYmFzZShwKXtpZighZmJfZGIpcmV0dXJuO2ZiX2RiLmNvbGxlY3Rpb24oJ21ldGEnKS5kb2MoJ3JheW1vbmQnKS5zZXQoe3BheWxvYWQ6cCx1cGRhdGVkQXQ6RGF0ZS5ub3coKX0pO30KZnVuY3Rpb24gcGFyc2VCdWxrQ29uZmlnKCl7CiAgY29uc3QgYnVsaz1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnVsa0ZpcmViYXNlUGFzdGUnKS52YWx1ZS50cmltKCk7CiAgaWYoIWJ1bGspcmV0dXJuIGFsZXJ0KCdQYXN0ZSBmaXJzdCcpOwogIGZ1bmN0aW9uIGV4KGspe2xldCBtPWJ1bGsubWF0Y2gobmV3IFJlZ0V4cChrKydcXHMqOlxccyoiKFteIl0rKSInLCdpJykpO3JldHVybiBtP21bMV06Jyc7fQogIGxldCBjZmc9e2FwaUtleTpleCgnYXBpS2V5JyksYXV0aERvbWFpbjpleCgnYXV0aERvbWFpbicpLHByb2plY3RJZDpleCgncHJvamVjdElkJyksc3RvcmFnZUJ1Y2tldDpleCgnc3RvcmFnZUJ1Y2tldCcpLG1lc3NhZ2luZ1NlbmRlcklkOmV4KCdtZXNzYWdpbmdTZW5kZXJJZCcpLGFwcElkOmV4KCdhcHBJZCcpfTsKICBpZighY2ZnLmFwaUtleSl7YWxlcnQoJ1BhcnNlIGZhaWxlZCcpO3JldHVybjt9CiAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2ZiX2FwaUtleScpLnZhbHVlPWNmZy5hcGlLZXk7CiAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2ZiX2F1dGhEb21haW4nKS52YWx1ZT1jZmcuYXV0aERvbWFpbjsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZmJfcHJvamVjdElkJykudmFsdWU9Y2ZnLnByb2plY3RJZDsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZmJfc3RvcmFnZUJ1Y2tldCcpLnZhbHVlPWNmZy5zdG9yYWdlQnVja2V0OwogIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdmYl9tZXNzYWdpbmdTZW5kZXJJZCcpLnZhbHVlPWNmZy5tZXNzYWdpbmdTZW5kZXJJZDsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZmJfYXBwSWQnKS52YWx1ZT1jZmcuYXBwSWQ7CiAgbG9jYWxTdG9yYWdlLnNldEl0ZW0oJ2ZpcmViYXNlX2NvbmZpZycsSlNPTi5zdHJpbmdpZnkoY2ZnKSk7CiAgbGV0IHN0PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdmYlN0YXR1cycpOwogIGlmKHN0KXtzdC5pbm5lclRleHQ9J+KckyA2IGZpZWxkcyBmaWxsZWQhIENvbm5lY3RpbmcuLi4nO3N0LnN0eWxlLmNvbG9yPSdncmVlbic7fQogIHNldFRpbWVvdXQoKCk9Pnt0cnl7aWYoZmlyZWJhc2UuYXBwcy5sZW5ndGg9PT0wKWZpcmViYXNlLmluaXRpYWxpemVBcHAoY2ZnKTtmYl9kYj1maXJlYmFzZS5maXJlc3RvcmUoKTtmaXJlYmFzZVJlYWR5PXRydWU7d2luZG93LmZpcmViYXNlUmVhZHk9dHJ1ZTtzdC5pbm5lclRleHQ9J+KckyBDb25uZWN0ZWQgLSAnK2NmZy5wcm9qZWN0SWQrJyAtIEZJWEVEJzthbGVydCgnU1VDQ0VTUyEgQ29ubmVjdGVkICcrY2ZnLnByb2plY3RJZCk7fWNhdGNoKGUpe2FsZXJ0KGUubWVzc2FnZSk7fX0sNTAwKTsKfQpsZXQgY3VycmVudFBvcnRhbFN1Yj0ncmVhZHltYWRlJyxjdXJyZW50U2V0dGluZ3NTdWI9J3Nob3BpbmZvJzsKZnVuY3Rpb24gc3dpdGNoVGFiKHRhYil7ZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnLm5hdi1pdGVtJykuZm9yRWFjaChuPT5uLmNsYXNzTGlzdC5yZW1vdmUoJ2FjdGl2ZScpKTtkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbmF2LScrdGFiKS5jbGFzc0xpc3QuYWRkKCdhY3RpdmUnKTtkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcudGFiLWNvbnRlbnQnKS5mb3JFYWNoKHQ9PnQuc3R5bGUuZGlzcGxheT0nbm9uZScpO2RvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YWItJyt0YWIpLnN0eWxlLmRpc3BsYXk9J2Jsb2NrJztsZXQgcHM9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3BvcnRhbFN1YlNpZGViYXInKSxzcz1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnc2V0dGluZ3NTdWJTaWRlYmFyJyk7aWYocHMpcHMuY2xhc3NMaXN0LnJlbW92ZSgnc2hvdycpO2lmKHNzKXNzLmNsYXNzTGlzdC5yZW1vdmUoJ3Nob3cnKTtpZih0YWI9PT0ncG9ydGFsJyl7cHMuY2xhc3NMaXN0LmFkZCgnc2hvdycpO3N3aXRjaFBvcnRhbFN1YihjdXJyZW50UG9ydGFsU3ViKTt9aWYodGFiPT09J3NldHRpbmdzJyl7c3MuY2xhc3NMaXN0LmFkZCgnc2hvdycpO3N3aXRjaFNldHRpbmdzU3ViKGN1cnJlbnRTZXR0aW5nc1N1Yik7fX0KZnVuY3Rpb24gc3dpdGNoUG9ydGFsU3ViKHN1Yil7Y3VycmVudFBvcnRhbFN1Yj1zdWI7ZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnI3BvcnRhbFN1YlNpZGViYXIgLnN1Yi1uYXYtaXRlbScpLmZvckVhY2gobj0+bi5jbGFzc0xpc3QucmVtb3ZlKCdhY3RpdmUnKSk7ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3N1Yi0nK3N1YikuY2xhc3NMaXN0LmFkZCgnYWN0aXZlJyk7ZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnLnBvcnRhbC1zdWItY29udGVudCcpLmZvckVhY2goYz0+Yy5zdHlsZS5kaXNwbGF5PSdub25lJyk7ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3BvcnRhbC0nK3N1Yikuc3R5bGUuZGlzcGxheT0nYmxvY2snO2lmKHN1Yj09PSdyZWFkeW1hZGUnKXJlbmRlclBvcnRhbFByb2R1Y3RzKCk7aWYoc3ViPT09J3RhaWxvcmVkJylyZW5kZXJUYWlsb3JlZFByb2R1Y3RzKCk7aWYoc3ViPT09J3NpemUnKXJlbmRlclNpemVTZWdtZW50cygpO2lmKHN1Yj09PSdzdGFmZicpcmVuZGVyU3RhZmYoKTt9CmZ1bmN0aW9uIHN3aXRjaFNldHRpbmdzU3ViKHN1Yil7Y3VycmVudFNldHRpbmdzU3ViPXN1Yjtkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjc2V0dGluZ3NTdWJTaWRlYmFyIC5zdWItbmF2LWl0ZW0nKS5mb3JFYWNoKG49Pm4uY2xhc3NMaXN0LnJlbW92ZSgnYWN0aXZlJykpO2RvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdzdWItJytzdWIpLmNsYXNzTGlzdC5hZGQoJ2FjdGl2ZScpO2RvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJy5zZXR0aW5ncy1zdWItY29udGVudCcpLmZvckVhY2goYz0+Yy5zdHlsZS5kaXNwbGF5PSdub25lJyk7ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3NldHRpbmdzLScrc3ViKS5zdHlsZS5kaXNwbGF5PSdibG9jayc7fQpmdW5jdGlvbiB0b2dnbGVNb2JpbGVNZW51KCl7ZG9jdW1lbnQucXVlcnlTZWxlY3RvcignLnNpZGViYXInKS5jbGFzc0xpc3QudG9nZ2xlKCdtb2JpbGUtb3BlbicpO30KZnVuY3Rpb24gdG9nZ2xlRHJvcGRvd24oKXtkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncGx1c0Ryb3Bkb3duJykuY2xhc3NMaXN0LnRvZ2dsZSgnc2hvdycpO30KZnVuY3Rpb24gb3Blbk5ld09yZGVyKCl7ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3BsdXNEcm9wZG93bicpLmNsYXNzTGlzdC5yZW1vdmUoJ3Nob3cnKTtwb3B1bGF0ZVByb2R1Y3REcm9wZG93bigpO2RvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdvcmRlclNsaXBQcmV2aWV3JykuaW5uZXJUZXh0PScgLSBTbGlwICMnK2RiLm5leHRTbGlwO2RvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdvcmRlck1vZGFsJykuY2xhc3NMaXN0LmFkZCgnc2hvdycpO30KZnVuY3Rpb24gY2xvc2VPcmRlck1vZGFsKCl7ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ29yZGVyTW9kYWwnKS5jbGFzc0xpc3QucmVtb3ZlKCdzaG93Jyk7fQpmdW5jdGlvbiBwb3B1bGF0ZVByb2R1Y3REcm9wZG93bigpe2xldCBzZWw9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2ZfdHlwZScpO3NlbC5pbm5lckhUTUw9Jyc7aWYoZGIudGFpbG9yZWRQcm9kdWN0cy5sZW5ndGg9PT0wKXtzZWwuaW5uZXJIVE1MPSc8b3B0aW9uPk5vIHByb2R1Y3RzPC9vcHRpb24+Jzt9ZWxzZXtkYi50YWlsb3JlZFByb2R1Y3RzLmZvckVhY2gocD0+e2xldCBvPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ29wdGlvbicpO28udmFsdWU9cC5uYW1lO28uaW5uZXJUZXh0PXAubmFtZTtzZWwuYXBwZW5kQ2hpbGQobyk7fSk7fXJlbmRlckR5bmFtaWNTaXplcygpO30KZnVuY3Rpb24gcmVuZGVyRHluYW1pY1NpemVzKCl7bGV0IHByb2Q9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2ZfdHlwZScpLnZhbHVlLGNvbnQ9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2R5bmFtaWNTaXplRmllbGRzJyk7Y29udC5pbm5lckhUTUw9Jyc7bGV0IHNlZ3M9ZGIuc2l6ZVNlZ21lbnRzW3Byb2RdfHxbXTtpZihzZWdzLmxlbmd0aD09PTApe2NvbnQuaW5uZXJIVE1MPSc8ZGl2IGNsYXNzPSJmb3JtLWdyb3VwIGZ1bGwiIHN0eWxlPSJwYWRkaW5nOjEycHg7YmFja2dyb3VuZDojZmZmM2NkIj5ObyBzaXplIGZvciAnK3Byb2QrJzwvZGl2Pic7cmV0dXJuO31zZWdzLmZvckVhY2gocz0+e2xldCBkPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO2QuY2xhc3NOYW1lPSdmb3JtLWdyb3VwJztkLmlubmVySFRNTD0nPGxhYmVsPicrcysnPC9sYWJlbD48aW5wdXQgZGF0YS1zaXplPSInK3MrJyI+Jztjb250LmFwcGVuZENoaWxkKGQpO30pO30KZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ29yZGVyRm9ybScpPy5hZGRFdmVudExpc3RlbmVyKCdzdWJtaXQnLGZ1bmN0aW9uKGUpe2UucHJldmVudERlZmF1bHQoKTtsZXQgbmFtZT1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZl9uYW1lJykudmFsdWUsbW9iaWxlPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdmX21vYmlsZScpLnZhbHVlLHR5cGU9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2ZfdHlwZScpLnZhbHVlO2xldCBzaXplcz17fTtkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcjZHluYW1pY1NpemVGaWVsZHMgaW5wdXRbZGF0YS1zaXplXScpLmZvckVhY2goaT0+e3NpemVzW2kuZGF0YXNldC5zaXplXT1pLnZhbHVlO30pO2xldCBvcmRlcj17aWQ6RGF0ZS5ub3coKSxzbGlwTm86ZGIubmV4dFNsaXAsbmFtZSxtb2JpbGUsdHlwZSxzaXplcyx0b3RhbDpwYXJzZUZsb2F0KGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdmX3RvdGFsJykudmFsdWUpfHwwLHN0YXR1czonUGVuZGluZycsY3JlYXRlZEF0Om5ldyBEYXRlKCkudG9JU09TdHJpbmcoKX07ZGIub3JkZXJzLnB1c2gob3JkZXIpO2RiLm5leHRTbGlwKys7c2F2ZURCKCk7Y2xvc2VPcmRlck1vZGFsKCk7YWxlcnQoJ1NhdmVkICMnK29yZGVyLnNsaXBObyk7fSk7CmZ1bmN0aW9uIHJlbmRlck9yZGVyU2xpcCgpe2xldCBlbD1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnb3JkZXJTbGlwTGlzdCcpO2lmKCFlbClyZXR1cm47ZWwuaW5uZXJIVE1MPWRiLm9yZGVycy5sZW5ndGg/ZGIub3JkZXJzLm1hcChvPT4nPGRpdj4nK28ubmFtZSsnIC0gJytvLnR5cGUrJzwvZGl2PicpLmpvaW4oJycpOidObyBvcmRlcnMnO30KZnVuY3Rpb24gcmVuZGVyQ3VzdG9tZXJzKCl7fQpmdW5jdGlvbiByZW5kZXJQb3J0YWxQcm9kdWN0cygpe2xldCBlbD1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncG9ydGFsUHJvZHVjdExpc3QnKTtpZihlbCllbC5pbm5lckhUTUw9ZGIucHJvZHVjdHMubGVuZ3RoP2RiLnByb2R1Y3RzLm1hcChwPT4nPGRpdj4nK3AubmFtZSsnPC9kaXY+Jykuam9pbignJyk6J05vIHByb2R1Y3RzJzt9CmZ1bmN0aW9uIGFkZFByb2R1Y3QoKXtsZXQgbj1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncHJvZE5hbWUnKS52YWx1ZTtpZighbilyZXR1cm47ZGIucHJvZHVjdHMucHVzaCh7aWQ6RGF0ZS5ub3coKSxuYW1lOm4scHJpY2U6MH0pO3NhdmVEQigpO3JlbmRlclBvcnRhbFByb2R1Y3RzKCk7fQpmdW5jdGlvbiByZW5kZXJUYWlsb3JlZFByb2R1Y3RzKCl7bGV0IGVsPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YWlsb3JlZFByb2R1Y3RMaXN0Jyksc2VsPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdzaXplUHJvZHVjdFNlbGVjdCcpO2lmKGVsKWVsLmlubmVySFRNTD1kYi50YWlsb3JlZFByb2R1Y3RzLm1hcChwPT4nPGRpdj4nK3AubmFtZSsnIDxidXR0b24gb25jbGljaz0iZGVsZXRlVGFpbG9yZWRQcm9kdWN0KCcrcC5pZCsnKSI+RGVsPC9idXR0b24+PC9kaXY+Jykuam9pbignJyk7aWYoc2VsKXtzZWwuaW5uZXJIVE1MPSc8b3B0aW9uIHZhbHVlPSIiPlNlbGVjdDwvb3B0aW9uPic7ZGIudGFpbG9yZWRQcm9kdWN0cy5mb3JFYWNoKHA9PntsZXQgbz1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdvcHRpb24nKTtvLnZhbHVlPXAubmFtZTtvLmlubmVyVGV4dD1wLm5hbWU7c2VsLmFwcGVuZENoaWxkKG8pO30pO319CmZ1bmN0aW9uIGFkZFRhaWxvcmVkUHJvZHVjdCgpe2xldCBuPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YWlsb3JlZE5hbWUnKS52YWx1ZS50cmltKCk7aWYoIW4pcmV0dXJuO2RiLnRhaWxvcmVkUHJvZHVjdHMucHVzaCh7aWQ6RGF0ZS5ub3coKSxuYW1lOm59KTtpZighZGIuc2l6ZVNlZ21lbnRzW25dKWRiLnNpemVTZWdtZW50c1tuXT1bXTtzYXZlREIoKTtyZW5kZXJUYWlsb3JlZFByb2R1Y3RzKCk7fQpmdW5jdGlvbiBkZWxldGVUYWlsb3JlZFByb2R1Y3QoaWQpe2RiLnRhaWxvcmVkUHJvZHVjdHM9ZGIudGFpbG9yZWRQcm9kdWN0cy5maWx0ZXIoeD0+eC5pZCE9PWlkKTtzYXZlREIoKTtyZW5kZXJUYWlsb3JlZFByb2R1Y3RzKCk7fQpmdW5jdGlvbiByZW5kZXJTaXplU2VnbWVudHMoKXtsZXQgcHJvZD1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnc2l6ZVByb2R1Y3RTZWxlY3QnKS52YWx1ZSxsaXN0PWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdzaXplU2VnbWVudHNMaXN0Jyk7aWYoIXByb2Qpe2xpc3QuaW5uZXJIVE1MPSdTZWxlY3QgcHJvZHVjdCc7cmV0dXJuO31sZXQgc2Vncz1kYi5zaXplU2VnbWVudHNbcHJvZF18fFtdO2xpc3QuaW5uZXJIVE1MPXNlZ3MubWFwKChzLGkpPT4nPGRpdj4nK3MrJyA8YnV0dG9uIG9uY2xpY2s9ImRlbGV0ZVNpemVTZWdtZW50KFwnJytwcm9kKydcJywnK2krJykiPkRlbDwvYnV0dG9uPjwvZGl2PicpLmpvaW4oJycpfHwnTm8gc2VnbWVudHMnO30KZnVuY3Rpb24gYWRkU2l6ZVNlZ21lbnQoKXtsZXQgcHJvZD1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnc2l6ZVByb2R1Y3RTZWxlY3QnKS52YWx1ZTtpZighcHJvZClyZXR1cm4gYWxlcnQoJ1NlbGVjdCBwcm9kdWN0Jyk7bGV0IG49ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ25ld1NpemVOYW1lJykudmFsdWUudHJpbSgpO2lmKCFuKXJldHVybjtpZighZGIuc2l6ZVNlZ21lbnRzW3Byb2RdKWRiLnNpemVTZWdtZW50c1twcm9kXT1bXTtkYi5zaXplU2VnbWVudHNbcHJvZF0ucHVzaChuKTtzYXZlREIoKTtyZW5kZXJTaXplU2VnbWVudHMoKTt9CmZ1bmN0aW9uIGRlbGV0ZVNpemVTZWdtZW50KHAsaSl7ZGIuc2l6ZVNlZ21lbnRzW3BdLnNwbGljZShpLDEpO3NhdmVEQigpO3JlbmRlclNpemVTZWdtZW50cygpO30KZnVuY3Rpb24gcmVuZGVyU3RhZmYoKXt9CmZ1bmN0aW9uIHVwZGF0ZURhc2goKXt9CmZ1bmN0aW9uIHJlbmRlckFsbCgpe3JlbmRlclBvcnRhbFByb2R1Y3RzKCk7cmVuZGVyVGFpbG9yZWRQcm9kdWN0cygpO3JlbmRlclNpemVTZWdtZW50cygpO30Kd2luZG93Lm9ubG9hZD1mdW5jdGlvbigpe2lmKGxvY2FsU3RvcmFnZS5nZXRJdGVtKCdyYXltb25kX2F1dGgnKSE9PSd0cnVlJyYmbG9jYXRpb24uaHJlZi5pbmNsdWRlcygnL2FwcC8nKSl7bG9jYXRpb24uaHJlZj0nLi4vaW5kZXguaHRtbCc7cmV0dXJuO31pbml0RmlyZWJhc2UoKTtsZXQgZWZmPWdldEZpcmViYXNlQ29uZmlnKCk7WydmYl9hcGlLZXknLCdmYl9hdXRoRG9tYWluJywnZmJfcHJvamVjdElkJywnZmJfc3RvcmFnZUJ1Y2tldCcsJ2ZiX21lc3NhZ2luZ1NlbmRlcklkJywnZmJfYXBwSWQnXS5mb3JFYWNoKChpZCxpKT0+e2xldCBrPVsnYXBpS2V5JywnYXV0aERvbWFpbicsJ3Byb2plY3RJZCcsJ3N0b3JhZ2VCdWNrZXQnLCdtZXNzYWdpbmdTZW5kZXJJZCcsJ2FwcElkJ11baV07bGV0IGVsPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGlkKTtpZihlbCllbC52YWx1ZT1lZmZba118fCcnO30pO3JlbmRlckFsbCgpO30K"></script>
+<script>
+function toggleDashboardPlus(){let m=document.getElementById('dashboardPlusMenu');if(m)m.classList.toggle('show');}
+function toggleHeaderDropdown(){let d=document.getElementById('plusDropdown');if(!d)return;d.classList.toggle('show');}
+</script>
 </body>
 </html>

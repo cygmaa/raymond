@@ -94,3 +94,5 @@ body.locked .main, body.locked .sidebar, body.locked .sub-sidebar{filter:blur(15
   .content{padding:12px !important}
   .form-grid{grid-template-columns:1fr !important}
 }
+
+*{font-size:13px} .nav-item{font-size:13px !important} .sub-nav-item{font-size:13px !important}
