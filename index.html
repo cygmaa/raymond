@@ -5,21 +5,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Raymond Shop - Login</title>
 <style>
-body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5;font-family:Arial,sans-serif}
-.login-box{width:280px;text-align:center;background:#fff;padding:24px 20px;border:1px solid rgba(204,0,0,0.15);box-shadow:0 20px 60px rgba(0,0,0,0.15);border-radius:8px}
-.login-input{width:100%;padding:10px 12px;border:1.5px solid #CC0000;outline:none;font-size:14px;text-align:center;letter-spacing:3px;background:#fff;color:#111;border-radius:4px}
+*{box-sizing:border-box}
+body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5;font-family:Arial,sans-serif;overflow:hidden;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+#loginOverlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:rgba(255,255,255,0.15);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);cursor:text}
+.login-box{width:300px;text-align:center;background:rgba(255,255,255,0.96);padding:26px 22px;border:1px solid rgba(204,0,0,0.18);box-shadow:0 20px 60px rgba(0,0,0,0.18);border-radius:10px;cursor:default}
+.login-label{color:#CC0000;font-size:13px;font-weight:400;letter-spacing:0.5px;margin-bottom:16px;text-transform:none;font-family:Arial,sans-serif}
+.login-input{width:100%;padding:11px 12px;border:1.5px solid #CC0000;outline:none;font-size:14px;text-align:center;letter-spacing:3px;background:#fff;color:#111;border-radius:5px;display:block;margin:0 auto;cursor:text;-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text}
+.login-input:focus{border-color:#CC0000;box-shadow:0 0 0 3px rgba(204,0,0,0.12)}
 .login-error{color:#CC0000;font-size:11px;margin-top:10px;min-height:14px;display:none;font-weight:600}
 .login-error.show{display:block!important}
-.login-ok{margin-top:14px;padding:6px 28px;background:#CC0000;color:#fff;border:0;font-weight:700;cursor:pointer;font-size:12px;min-width:75px;border-radius:4px}
+.login-ok{margin-top:16px;padding:7px 28px;background:#CC0000;color:#fff;border:0;font-weight:700;cursor:pointer;font-size:12px;min-width:78px;border-radius:4px}
+.login-ok:hover{background:#a80000}
 </style>
 </head>
 <body>
-<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);backdrop-filter:blur(18px) saturate(180%);">
-  <div class="login-box">
-    <div style="color:#CC0000;font-size:13px;font-weight:600;letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase">Administrator</div>
-    <input type="password" id="adminCodeInput" class="login-input" autocomplete="off">
-    <div id="loginError" class="login-error">Wrong code!</div>
-    <button class="login-ok" onclick="checkAdminCode()">OK</button>
+<div id="loginOverlay">
+  <div class="login-box" id="loginBox">
+    <div class="login-label">Administrator</div>
+    <input type="password" id="adminCodeInput" class="login-input" autocomplete="off" spellcheck="false" autofocus>
+    <div id="loginError" class="login-error">Wrong code! Enter correct code.</div>
+    <button class="login-ok" id="loginOkBtn" onclick="checkAdminCode()">OK</button>
   </div>
 </div>
 <script>
@@ -28,17 +33,92 @@ function getAdminCode(){return localStorage.getItem('admin_code')||DEFAULT_ADMIN
 function checkAdminCode(){
   const el=document.getElementById('adminCodeInput');
   const err=document.getElementById('loginError');
+  if(!el.value){
+    err.innerText='Enter code';
+    err.classList.add('show');
+    el.focus();
+    return;
+  }
   if(el.value===getAdminCode()){
     localStorage.setItem('raymond_auth','true');
     window.location.href='app/index.html';
   }else{
     err.innerText='Wrong code! Enter correct code.';
     err.classList.add('show');
-    el.value=''; el.focus();
+    el.value='';
+    el.focus();
   }
 }
-document.addEventListener('keydown',function(e){if(e.key==='Enter'){checkAdminCode();}});
-window.onload=function(){if(localStorage.getItem('raymond_auth')==='true'){window.location.href='app/index.html';}};
+// Always focus input
+function focusInput(){
+  const el=document.getElementById('adminCodeInput');
+  if(el){
+    el.focus();
+    // Move cursor to end
+    const len=el.value.length;
+    el.setSelectionRange(len,len);
+  }
+}
+// Click anywhere on overlay -> focus input, except clicking input and button already focused
+document.getElementById('loginOverlay').addEventListener('click',function(e){
+  const box=document.getElementById('loginBox');
+  const input=document.getElementById('adminCodeInput');
+  const btn=document.getElementById('loginOkBtn');
+  // If click is directly on overlay or box background (not input/button), focus input
+  if(e.target!==input && e.target!==btn){
+    focusInput();
+  }
+});
+document.getElementById('loginBox').addEventListener('click',function(e){
+  const input=document.getElementById('adminCodeInput');
+  const btn=document.getElementById('loginOkBtn');
+  if(e.target!==input && e.target!==btn){
+    e.stopPropagation();
+    focusInput();
+  }
+});
+// Auto focus on load and keep blinking
+window.addEventListener('load',function(){
+  setTimeout(focusInput,100);
+  setTimeout(focusInput,500);
+});
+// If user types anywhere, focus input
+document.addEventListener('keydown',function(e){
+  const input=document.getElementById('adminCodeInput');
+  const active=document.activeElement;
+  // If not focused on input, focus it (except Enter which triggers check)
+  if(active!==input){
+    // Allow typing to go to input
+    if(e.key.length===1 || e.key==='Backspace' || e.key==='Delete'){
+      focusInput();
+    }
+  }
+  if(e.key==='Enter'){
+    checkAdminCode();
+  }
+});
+// Disable right click everywhere
+document.addEventListener('contextmenu',function(e){
+  e.preventDefault();
+  return false;
+}, true);
+// Disable Inspect: F12, Ctrl+Shift+I,J,C, Ctrl+U, Ctrl+S
+document.addEventListener('keydown',function(e){
+  if(e.key==='F12' ||
+     (e.ctrlKey && e.shiftKey && (e.key==='I' || e.key==='i' || e.key==='J' || e.key==='j' || e.key==='C' || e.key==='c')) ||
+     (e.ctrlKey && (e.key==='u' || e.key==='U' || e.key==='s' || e.key==='S' || e.key==='p' || e.key==='P'))){
+    e.preventDefault();
+    return false;
+  }
+});
+// Disable drag and drop
+document.addEventListener('dragstart',function(e){e.preventDefault();return false;});
+// Auto redirect if already logged
+(function(){
+  if(localStorage.getItem('raymond_auth')==='true'){
+    window.location.href='app/index.html';
+  }
+})();
 </script>
 </body>
 </html>
