@@ -1,72 +1,108 @@
 
 const DEFAULT_FIREBASE_CONFIG={apiKey:"AIzaSyDmupiTTuxwYZPci-lFehUL1pNv9TV8CE8",authDomain:"raymond-df295.firebaseapp.com",projectId:"raymond-df295",storageBucket:"raymond-df295.firebasestorage.app",messagingSenderId:"36554452985",appId:"1:36554452985:web:51546aaf1ba16d536d5728"};
 let db={orders:[],customers:[],staff:[],products:[],tailoredProducts:[],sizeSegments:{},nextSlip:1,lastSync:0};
-try{let d=localStorage.getItem('raymond_v2_db');if(d){db=JSON.parse(d);if(!db.tailoredProducts)db.tailoredProducts=[];if(!db.sizeSegments)db.sizeSegments={};}}catch{}
+try{let d=localStorage.getItem('raymond_v2_db');if(d){db=JSON.parse(d);if(!db.tailoredProducts)db.tailoredProducts=[];if(!db.sizeSegments)db.sizeSegments={};if(!db.staff)db.staff=[];if(!db.products)db.products=[];}}catch{}
 function saveDB(){
   db.lastSync=Date.now();
   localStorage.setItem('raymond_v2_db',JSON.stringify(db));
-  console.log('saveDB local, fb_db:',!!fb_db);
-  if(fb_db){ syncToFirebase(db); }
+  console.log('[SAVE] Local saved, orders:',db.orders.length);
+  // ALWAYS try to push if fb_db exists
+  if(typeof fb_db !== 'undefined' && fb_db){
+    console.log('[SAVE] Pushing to Firebase...');
+    syncToFirebase(db);
+  }else{
+    console.warn('[SAVE] fb_db not ready, will push after init');
+    // Retry after 1 sec
+    setTimeout(()=>{ if(fb_db) syncToFirebase(db); },1000);
+  }
   updateDash();
 }
-let firebaseReady=false,fb_db=null,fb_unsubscribe=null;
+let fb_db=null, fb_unsubscribe=null;
+let isSyncingFromCloud=false;
 function getFirebaseConfig(){try{let c=JSON.parse(localStorage.getItem('firebase_config'));if(c&&c.apiKey)return c}catch{}return DEFAULT_FIREBASE_CONFIG;}
 function initFirebase(){
   try{
     let cfg=getFirebaseConfig();
-    console.log('initFirebase with',cfg.projectId);
+    console.log('[FIREBASE] Init with project:',cfg.projectId);
     if(!firebase.apps.length){
       firebase.initializeApp(cfg);
+      console.log('[FIREBASE] App initialized');
     }
     fb_db=firebase.firestore();
-    firebaseReady=true;window.firebaseReady=true;
+    window.fb_db=fb_db;
+    window.firebaseReady=true;
     let st=document.getElementById('fbStatus');
     if(st){st.innerText='✓ Connected - Live Sync Active (Project: '+cfg.projectId+')';st.style.color='green';}
-    // Unsubscribe previous
-    if(fb_unsubscribe){ fb_unsubscribe(); fb_unsubscribe=null; }
+    // Unsubscribe old
+    if(fb_unsubscribe){try{fb_unsubscribe();}catch{} fb_unsubscribe=null;}
+    // Listen to cloud changes
     fb_unsubscribe = fb_db.collection('meta').doc('raymond').onSnapshot(doc=>{
+      if(isSyncingFromCloud) return; // Avoid loop
       if(doc.exists){
         let data=doc.data();
-        console.log('onSnapshot remote updatedAt',data.updatedAt,'local lastSync',db.lastSync);
-        if(data.updatedAt > (db.lastSync||0)+2000){
-          console.log('Remote newer, applying');
-          let remote = data.payload;
-          if(remote){
-            db=remote;
-            if(!db.tailoredProducts)db.tailoredProducts=[];
-            if(!db.sizeSegments)db.sizeSegments={};
-            if(!db.staff)db.staff=[];
-            if(!db.products)db.products=[];
-            if(!db.orders)db.orders=[];
-            if(!db.customers)db.customers=[];
-            localStorage.setItem('raymond_v2_db',JSON.stringify(db));
-            renderAll();
-          }
+        console.log('[FIREBASE] Snapshot received, cloud updatedAt:',data.updatedAt,'local lastSync:',db.lastSync);
+        // If cloud is newer than local + 3 sec, pull it
+        if(!data.payload) return;
+        // Simple check: if cloud has more orders than local, or updatedAt newer
+        let cloudOrders = data.payload.orders ? data.payload.orders.length : 0;
+        let localOrders = db.orders ? db.orders.length : 0;
+        let isNewer = data.updatedAt > (db.lastSync||0)+3000;
+        let hasMoreData = cloudOrders > localOrders;
+        console.log('[FIREBASE] isNewer:',isNewer,'hasMoreData:',hasMoreData,'cloudOrders:',cloudOrders,'localOrders:',localOrders);
+        if(isNewer || hasMoreData){
+          console.log('[FIREBASE] Pulling cloud data...');
+          isSyncingFromCloud=true;
+          db=data.payload;
+          if(!db.tailoredProducts)db.tailoredProducts=[];
+          if(!db.sizeSegments)db.sizeSegments={};
+          if(!db.staff)db.staff=[];
+          if(!db.products)db.products=[];
+          if(!db.orders)db.orders=[];
+          if(!db.customers)db.customers=[];
+          if(!db.nextSlip)db.nextSlip=1;
+          localStorage.setItem('raymond_v2_db',JSON.stringify(db));
+          renderAll();
+          setTimeout(()=>{isSyncingFromCloud=false;},1000);
+          if(st){st.innerText='✓ Synced from cloud ('+cloudOrders+' orders) - '+new Date().toLocaleTimeString();st.style.color='green';}
         }
       }else{
-        console.log('No remote doc, pushing local');
+        console.log('[FIREBASE] No cloud doc, pushing local',db.orders.length,'orders');
         syncToFirebase(db);
       }
     }, err=>{
-      console.error('Snapshot error',err);
+      console.error('[FIREBASE] Snapshot error:',err);
       let st=document.getElementById('fbStatus');
-      if(st){st.innerText='✗ Listener Error: '+err.message;st.style.color='red';}
+      if(st){st.innerText='✗ Listener Error: '+err.message+' | Check Firestore Rules';st.style.color='red';}
     });
+    console.log('[FIREBASE] Listener set');
   }catch(e){
-    console.error('init error',e);
+    console.error('[FIREBASE] Init error:',e);
     let st=document.getElementById('fbStatus');
     if(st){st.innerText='✗ Init Error: '+e.message;st.style.color='red';}
   }
 }
 function syncToFirebase(payload){
-  if(!fb_db){ console.error('fb_db null'); return; }
-  fb_db.collection('meta').doc('raymond').set({payload:payload,updatedAt:Date.now()}).then(()=>{
-    console.log('Push success');
+  if(!fb_db){
+    console.error('[FIREBASE] syncToFirebase failed: fb_db is null');
     let st=document.getElementById('fbStatus');
-    if(st){st.innerText='✓ Saved to cloud - '+new Date().toLocaleTimeString()+' - '+getFirebaseConfig().projectId;st.style.color='green';}
+    if(st){st.innerText='✗ fb_db null - Re-init...';st.style.color='red';}
+    initFirebase();
+    setTimeout(()=>{ if(fb_db) syncToFirebase(payload); },1500);
+    return;
+  }
+  console.log('[FIREBASE] Pushing',payload.orders.length,'orders to cloud...');
+  fb_db.collection('meta').doc('raymond').set({
+    payload:payload,
+    updatedAt:Date.now()
+  }).then(()=>{
+    console.log('[FIREBASE] ✓ Push SUCCESS');
+    let st=document.getElementById('fbStatus');
+    if(st){st.innerText='✓ Saved to cloud - '+payload.orders.length+' orders - '+new Date().toLocaleTimeString()+' - '+getFirebaseConfig().projectId;st.style.color='green';}
   }).catch(err=>{
-    console.error('Push failed',err);
-    alert('Firebase Save Failed: '+err.message+'\n\nFirestore Rules check: allow read, write: if true;');
+    console.error('[FIREBASE] Push FAILED:',err);
+    let st=document.getElementById('fbStatus');
+    if(st){st.innerText='✗ Save Failed: '+err.message;st.style.color='red';}
+    alert('Firebase Save Failed: '+err.message+'\n\n1. Firebase Console > Firestore Database > Create Database (if not created)\n2. Rules tab > Change to:\nallow read, write: if true;\n3. Publish\n\nError: '+err.message);
   });
 }
 function parseBulkConfig(){
@@ -79,7 +115,7 @@ function parseBulkConfig(){
     return m?m[1]:'';
   }
   let cfg={apiKey:ex('apiKey'),authDomain:ex('authDomain'),projectId:ex('projectId'),storageBucket:ex('storageBucket'),messagingSenderId:ex('messagingSenderId'),appId:ex('appId')};
-  if(!cfg.apiKey){alert('Parse failed');return;}
+  if(!cfg.apiKey){alert('Parse failed - paste like apiKey: \"AIza...\"');return;}
   document.getElementById('fb_apiKey').value=cfg.apiKey;
   document.getElementById('fb_authDomain').value=cfg.authDomain;
   document.getElementById('fb_projectId').value=cfg.projectId;
@@ -88,18 +124,28 @@ function parseBulkConfig(){
   document.getElementById('fb_appId').value=cfg.appId;
   localStorage.setItem('firebase_config',JSON.stringify(cfg));
   let st=document.getElementById('fbStatus');
-  if(st){st.innerText='✓ 6 fields filled! Reconnecting...';st.style.color='green';}
-  // For new config, we need to re-init: delete old app if project changed
+  if(st){st.innerText='✓ 6 fields filled! Reconnecting to '+cfg.projectId+'...';st.style.color='green';}
+  // Force re-init with new config
   try{
-    let currentProject = firebase.apps.length ? firebase.apps[0].options.projectId : null;
-    if(currentProject && currentProject !== cfg.projectId){
-      firebase.apps[0].delete().then(()=>{ firebase.initializeApp(cfg); initFirebase(); alert('SUCCESS! Connected to '+cfg.projectId); });
+    if(firebase.apps.length){
+      firebase.apps[0].delete().then(()=>{
+        console.log('[FIREBASE] Old app deleted, init new');
+        firebase.initializeApp(cfg);
+        initFirebase();
+        // Push current local data to new project immediately
+        setTimeout(()=>{ syncToFirebase(db); alert('SUCCESS! Connected to '+cfg.projectId+' - Local data ('+db.orders.length+' orders) pushed to cloud'); },1000);
+      }).catch(e=>{
+        console.error(e);
+        initFirebase();
+      });
     }else{
-      if(!firebase.apps.length) firebase.initializeApp(cfg);
+      firebase.initializeApp(cfg);
       initFirebase();
+      setTimeout(()=>{ syncToFirebase(db); },1000);
       alert('SUCCESS! Connected '+cfg.projectId);
     }
   }catch(e){
+    console.error(e);
     initFirebase();
   }
 }
@@ -112,10 +158,6 @@ function switchPortalSub(sub){
   document.querySelectorAll('.portal-sub-content').forEach(c=>c.style.display='none');
   let el=document.getElementById('portal-'+sub);
   if(el)el.style.display='block';
-  if(sub==='readymade' && typeof renderPortalProducts==='function') renderPortalProducts();
-  if(sub==='tailored' && typeof renderTailoredProducts==='function') renderTailoredProducts();
-  if(sub==='size' && typeof renderSizeSegments==='function') renderSizeSegments();
-  if(sub==='staff' && typeof renderStaff==='function') renderStaff();
 }
 function switchSettingsSub(sub){
   currentSettingsSub=sub;
@@ -126,13 +168,12 @@ function switchSettingsSub(sub){
   let el=document.getElementById('settings-'+sub);
   if(el)el.style.display='block';
 }
-function toggleMobileMenu(){let sb=document.querySelector('.sidebar');if(sb)sb.classList.toggle('mobile-open');}
-function openNewOrder(){populateProductDropdown();let pv=document.getElementById('orderSlipPreview');if(pv)pv.innerText=' - Slip #'+db.nextSlip;let m=document.getElementById('orderModal');if(m){m.style.display='flex';}}
+function openNewOrder(){populateProductDropdown();let pv=document.getElementById('orderSlipPreview');if(pv)pv.innerText=' - Slip #'+db.nextSlip;let m=document.getElementById('orderModal');if(m)m.style.display='flex';}
 function closeOrderModal(){let m=document.getElementById('orderModal');if(m)m.style.display='none';}
 function populateProductDropdown(){let sel=document.getElementById('f_type');if(!sel)return;sel.innerHTML='';if(db.tailoredProducts.length===0){sel.innerHTML='<option>No products - Add in Portal > Tailored</option>';}else{db.tailoredProducts.forEach(p=>{let o=document.createElement('option');o.value=p.name;o.innerText=p.name;sel.appendChild(o);});}renderDynamicSizes();}
-function renderDynamicSizes(){let prodEl=document.getElementById('f_type');let prod=prodEl?prodEl.value:'';let cont=document.getElementById('dynamicSizeFields');if(!cont)return;cont.innerHTML='';let segs=db.sizeSegments[prod]||[];if(segs.length===0){cont.innerHTML='<div style=grid-column:1/-1;padding:12px;background:#fff3cd;border-radius:4px;font-size:13px>No size segments for '+prod+'. Add in Portal > Size Segments</div>';return;}segs.forEach(s=>{let d=document.createElement('div');d.innerHTML='<label style=font-size:12px>'+s+'</label><input data-size=\''+s+'\' placeholder=\''+s+'\' style=width:100%;padding:6px;border:1px solid #ddd;margin-top:2px>';cont.appendChild(d);});}
+function renderDynamicSizes(){let prodEl=document.getElementById('f_type');let prod=prodEl?prodEl.value:'';let cont=document.getElementById('dynamicSizeFields');if(!cont)return;cont.innerHTML='';let segs=db.sizeSegments[prod]||[];if(segs.length===0){cont.innerHTML='<div style=grid-column:1/-1;padding:12px;background:#fff3cd;border-radius:4px;font-size:13px>No size segments for '+prod+'</div>';return;}segs.forEach(s=>{let d=document.createElement('div');d.innerHTML='<label style=font-size:12px>'+s+'</label><input data-size=\''+s+'\' placeholder=\''+s+'\' style=width:100%;padding:6px;border:1px solid #ddd;margin-top:2px>';cont.appendChild(d);});}
 let orderForm=document.getElementById('orderForm');
-if(orderForm){orderForm.addEventListener('submit',function(e){e.preventDefault();let nameEl=document.getElementById('f_name');let name=nameEl?nameEl.value:'';let mobEl=document.getElementById('f_mobile');let mobile=mobEl?mobEl.value:'';let typeEl=document.getElementById('f_type');let type=typeEl?typeEl.value:'';if(!type||type.includes('No products'))return alert('Add Tailored Product first in Portal');let sizes={};document.querySelectorAll('#dynamicSizeFields input[data-size]').forEach(inp=>{sizes[inp.dataset.size]=inp.value;});let totalEl=document.getElementById('f_total');let order={id:Date.now(),slipNo:db.nextSlip,name:name,mobile:mobile,type:type,fabric:document.getElementById('f_fabric')?.value||'',qty:parseInt(document.getElementById('f_qty')?.value)||1,delivery:document.getElementById('f_delivery')?.value||'',total:parseFloat(totalEl?.value)||0,advance:parseFloat(document.getElementById('f_advance')?.value)||0,notes:document.getElementById('f_notes')?.value||'',sizes:sizes,status:'Pending',createdAt:new Date().toISOString()};order.due=order.total-order.advance;db.orders.push(order);db.nextSlip++;if(!db.customers.find(c=>c.mobile===mobile))db.customers.push({id:Date.now(),name:name,mobile:mobile});saveDB();closeOrderModal();this.reset();alert('Saved #'+order.slipNo+' - Synced to Firebase');renderAll();});}
+if(orderForm){orderForm.addEventListener('submit',function(e){e.preventDefault();let nameEl=document.getElementById('f_name');let name=nameEl?nameEl.value:'';let mobEl=document.getElementById('f_mobile');let mobile=mobEl?mobEl.value:'';let typeEl=document.getElementById('f_type');let type=typeEl?typeEl.value:'';if(!type||type.includes('No products'))return alert('Add Tailored Product first in Portal');let sizes={};document.querySelectorAll('#dynamicSizeFields input[data-size]').forEach(inp=>{sizes[inp.dataset.size]=inp.value;});let totalEl=document.getElementById('f_total');let order={id:Date.now(),slipNo:db.nextSlip,name:name,mobile:mobile,type:type,fabric:document.getElementById('f_fabric')?.value||'',qty:parseInt(document.getElementById('f_qty')?.value)||1,delivery:document.getElementById('f_delivery')?.value||'',total:parseFloat(totalEl?.value)||0,advance:parseFloat(document.getElementById('f_advance')?.value)||0,notes:document.getElementById('f_notes')?.value||'',sizes:sizes,status:'Pending',createdAt:new Date().toISOString()};order.due=order.total-order.advance;db.orders.push(order);db.nextSlip++;if(!db.customers.find(c=>c.mobile===mobile))db.customers.push({id:Date.now(),name:name,mobile:mobile});saveDB();closeOrderModal();this.reset();alert('Saved #'+order.slipNo+' - Pushing to Firebase... Check console (F12)');renderAll();});}
 function renderOrderSlip(){let el=document.getElementById('orderSlipList');if(!el)return;if(!db.orders.length){el.innerHTML='<div style=padding:20px;color:#666>No orders</div>';return;}let h='<table style=width:100%;border-collapse:collapse><tr style=background:#f5f5f5><th style=padding:8px;text-align:left;border:1px solid #ddd>Slip</th><th style=padding:8px;text-align:left;border:1px solid #ddd>Customer</th><th style=padding:8px;text-align:left;border:1px solid #ddd>Product</th><th style=padding:8px;text-align:left;border:1px solid #ddd>Total</th></tr>';db.orders.slice().reverse().forEach(o=>{h+='<tr style=cursor:pointer onclick=viewSlip('+o.id+')><td style=padding:8px;border:1px solid #ddd>#'+o.slipNo+'</td><td style=padding:8px;border:1px solid #ddd>'+o.name+'</td><td style=padding:8px;border:1px solid #ddd>'+o.type+'</td><td style=padding:8px;border:1px solid #ddd>৳'+o.total+'</td></tr>';});el.innerHTML=h+'</table>';}
 function viewSlip(id){let o=db.orders.find(x=>x.id===id);if(!o)return;let s='';if(o.sizes){s='<br><b>Measurements:</b><br>';for(let k in o.sizes){s+=k+': '+o.sizes[k]+' | ';}}let det=document.getElementById('slipDetail');if(det)det.innerHTML='<div style=padding:10px><b>Slip #'+o.slipNo+'</b><br>'+o.name+' - '+o.mobile+'<br>'+o.type+s+'<br>Total ৳'+o.total+'<br><br><button class=btn btn-gray onclick=deleteOrder('+o.id+')>Delete</button></div>';let m=document.getElementById('slipModal');if(m)m.style.display='flex';}
 function deleteOrder(id){if(confirm('Delete?')){db.orders=db.orders.filter(o=>o.id!==id);saveDB();let m=document.getElementById('slipModal');if(m)m.style.display='none';renderOrderSlip();}}
@@ -152,7 +193,7 @@ function deleteStaff(id){db.staff=db.staff.filter(s=>s.id!==id);saveDB();renderS
 function saveShopInfo(){let name=document.getElementById('shopName')?.value||'';let addr=document.getElementById('shopAddress')?.value||'';let phone=document.getElementById('shopPhone')?.value||'';localStorage.setItem('shop_info',JSON.stringify({name:name,address:addr,phone:phone}));alert('Company info saved');}
 function changeAdminCode(){let cur=document.getElementById('currentAdminCode')?.value||'';let nw=document.getElementById('newAdminCode')?.value||'';let conf=document.getElementById('confirmAdminCode')?.value||'';let real=localStorage.getItem('admin_code')||'Raymond0@.';if(cur!==real)return alert('Current wrong');if(nw!==conf)return alert('Confirm mismatch');localStorage.setItem('admin_code',nw);alert('Code changed');}
 function saveFirebaseConfig(){let cfg={apiKey:document.getElementById('fb_apiKey')?.value||'',authDomain:document.getElementById('fb_authDomain')?.value||'',projectId:document.getElementById('fb_projectId')?.value||'',storageBucket:document.getElementById('fb_storageBucket')?.value||'',messagingSenderId:document.getElementById('fb_messagingSenderId')?.value||'',appId:document.getElementById('fb_appId')?.value||''};localStorage.setItem('firebase_config',JSON.stringify(cfg));alert('Saved - Project: '+cfg.projectId+' - Reloading');location.reload();}
-function testFirebase(){try{let cfg=getFirebaseConfig();alert('Testing connection to '+cfg.projectId+'...');if(fb_db){fb_db.collection('meta').doc('test').set({time:Date.now()}).then(()=>alert('✓ Firebase Write OK - Data can be saved!')).catch(e=>alert('✗ Write Failed: '+e.message));}else alert('Firebase not initialized');}catch(e){alert(e.message);}}
+function testFirebase(){try{let cfg=getFirebaseConfig();console.log('Testing',cfg);alert('Testing connection to '+cfg.projectId+'... Check console F12');if(fb_db){fb_db.collection('meta').doc('test').set({time:Date.now(),test:'ok'}).then(()=>{alert('✓ Firebase Write OK - Data CAN be saved! Project: '+cfg.projectId); syncToFirebase(db);}).catch(e=>{alert('✗ Write Failed: '+e.message+'\n\nGo to Firebase Console > Firestore Database > Rules > set allow read, write: if true; > Publish');});}else alert('Firebase not initialized - check console');}catch(e){alert(e.message);console.error(e);}}
 function clearAllData(){if(confirm('Clear all local data?')){localStorage.removeItem('raymond_v2_db');location.reload();}}
 function loadAttendance(){let d=localStorage.getItem('raymond_attendance_v2');return d?JSON.parse(d):{};}
 function saveAttendance(a){localStorage.setItem('raymond_attendance_v2',JSON.stringify(a));}
@@ -161,7 +202,7 @@ function toggleAttendance(id){let att=loadAttendance(),today=new Date().toISOStr
 function renderAll(){renderOrderSlip();renderCustomers();renderPortalProducts();renderTailoredProducts();renderSizeSegments();renderStaff();renderAttendance();updateDash();}
 function updateDash(){let dc=document.getElementById('dashOrderCount');if(dc)dc.innerText=db.orders.length;let cc=document.getElementById('dashCustomerCount');if(cc)cc.innerText=db.customers.length;let st=document.getElementById('dashSaleTotal');if(st)st.innerText='৳ '+db.orders.reduce((s,o)=>s+o.total,0);let dc2=document.getElementById('dashOrderCount2');if(dc2)dc2.innerText=db.orders.length;let cc2=document.getElementById('dashCustomerCount2');if(cc2)cc2.innerText=db.customers.length;let st2=document.getElementById('dashSaleTotal2');if(st2)st2.innerText='৳ '+db.orders.reduce((s,o)=>s+o.total,0);let dd=document.getElementById('dashDate');if(dd)dd.innerText=new Date().toLocaleDateString();let td=document.getElementById('todayDate');if(td)td.innerText=new Date().toLocaleDateString();}
 window.onload=function(){
-  console.log('App loading...');
+  console.log('[APP] Loading...');
   if(localStorage.getItem('raymond_auth')!=='true' && window.location.href.includes('/app/')){window.location.href='../index.html';return;}
   initFirebase();
   let eff=getFirebaseConfig();
@@ -173,4 +214,7 @@ window.onload=function(){
   let shopInfo=localStorage.getItem('shop_info');
   if(shopInfo){try{let s=JSON.parse(shopInfo);let n=document.getElementById('shopName');if(n)n.value=s.name||'';let a=document.getElementById('shopAddress');if(a)a.value=s.address||'';let p=document.getElementById('shopPhone');if(p)p.value=s.phone||'';}catch{}}
   renderAll();
+  console.log('[APP] Loaded, orders:',db.orders.length,'fb_db:',!!fb_db);
+  // Force push after 2 sec to ensure cloud has data
+  setTimeout(()=>{ if(fb_db && db.orders.length>0){ console.log('[APP] Auto pushing after load'); syncToFirebase(db); } },2000);
 }

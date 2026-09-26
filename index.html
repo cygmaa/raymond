@@ -6,8 +6,7 @@
 <title>Raymond Shop - Login</title>
 <style>
 body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5;font-family:Arial,sans-serif}
-.login-box{width:280px;text-align:center;background:rgba(255,255,255,0.95);padding:24px 20px;border:1px solid rgba(204,0,0,0.15);box-shadow:0 20px 60px rgba(0,0,0,0.15);border-radius:8px}
-.login-label{color:#CC0000;font-size:13px;font-weight:600;letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase}
+.login-box{width:280px;text-align:center;background:#fff;padding:24px 20px;border:1px solid rgba(204,0,0,0.15);box-shadow:0 20px 60px rgba(0,0,0,0.15);border-radius:8px}
 .login-input{width:100%;padding:10px 12px;border:1.5px solid #CC0000;outline:none;font-size:14px;text-align:center;letter-spacing:3px;background:#fff;color:#111;border-radius:4px}
 .login-error{color:#CC0000;font-size:11px;margin-top:10px;min-height:14px;display:none;font-weight:600}
 .login-error.show{display:block!important}
@@ -15,11 +14,11 @@ body{margin:0;height:100vh;display:flex;align-items:center;justify-content:cente
 </style>
 </head>
 <body>
-<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:rgba(255,255,255,0.15);backdrop-filter:blur(18px) saturate(180%);">
+<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);backdrop-filter:blur(18px) saturate(180%);">
   <div class="login-box">
-    <div class="login-label">Administrator</div>
+    <div style="color:#CC0000;font-size:13px;font-weight:600;letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase">Administrator</div>
     <input type="password" id="adminCodeInput" class="login-input" autocomplete="off">
-    <div id="loginError" class="login-error">Wrong code! Enter correct code.</div>
+    <div id="loginError" class="login-error">Wrong code!</div>
     <button class="login-ok" onclick="checkAdminCode()">OK</button>
   </div>
 </div>
